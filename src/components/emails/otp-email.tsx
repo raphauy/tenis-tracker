@@ -8,7 +8,7 @@ import {
   Section,
   Text,
 } from '@react-email/components'
-import { EMAIL_COLORS, EMAIL_STYLES } from './email-theme'
+import { EMAIL_COLORS, EMAIL_FONTS, EMAIL_STYLES } from './email-theme'
 
 interface OtpEmailProps {
   otp?: string
@@ -29,7 +29,7 @@ export default function OtpEmail({ otp = '123456', appName = 'Tenis Tracker' }: 
             <Section style={EMAIL_STYLES.headerSection}>
               <Container style={{ padding: '0 16px' }}>
                 <Heading
-                  style={{ color: EMAIL_COLORS.textWhite, margin: 0, fontSize: '18px', fontWeight: 'bold' }}
+                  style={{ color: EMAIL_COLORS.textWhite, margin: 0, fontSize: '20px', fontWeight: 'bold', fontFamily: EMAIL_FONTS.serif }}
                 >
                   {appName}
                 </Heading>
@@ -44,7 +44,7 @@ export default function OtpEmail({ otp = '123456', appName = 'Tenis Tracker' }: 
             {/* Contenido principal */}
             <Section style={{ padding: '8px 16px 12px 16px' }}>
               <Heading
-                style={{ color: EMAIL_COLORS.textPrimary, fontSize: '18px', fontWeight: '600', margin: '0 0 8px 0' }}
+                style={{ color: EMAIL_COLORS.textPrimary, fontSize: '18px', fontWeight: '600', margin: '0 0 8px 0', fontFamily: EMAIL_FONTS.serif }}
               >
                 Tu código de verificación
               </Heading>
@@ -66,7 +66,7 @@ export default function OtpEmail({ otp = '123456', appName = 'Tenis Tracker' }: 
                       fontWeight: 'bold',
                       letterSpacing: '0.5em',
                       margin: 0,
-                      fontFamily: 'monospace',
+                      fontFamily: EMAIL_FONTS.mono,
                     }}
                   >
                     {otp}

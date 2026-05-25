@@ -1,56 +1,65 @@
 // Colores y estilos inline para los emails de Tenis Tracker.
-// Estructura basada en los emails de OnMind, con la marca verde cancha.
+// Derivados del tema "elegant-luxury" de la app (rojo vino + crema + dorado).
+// Los valores oklch del theme se convirtieron a HEX para compatibilidad con clientes de email.
 
 export const EMAIL_COLORS = {
   // Backgrounds
-  pageBackground: '#f4f4f5', // zinc-100
+  pageBackground: '#faf7f5', // background (crema)
   cardBackground: '#ffffff',
 
-  // Marca (verde cancha)
-  brand: '#15803d', // green-700
+  // Marca (rojo vino / primary)
+  brand: '#9b2c2c', // primary
 
   // Texto
-  textPrimary: '#18181b', // zinc-900
-  textSecondary: '#71717a', // zinc-500
-  textMuted: '#a1a1aa', // zinc-400
+  textPrimary: '#1a1a1a', // foreground
+  textSecondary: '#57534e', // muted-foreground
+  textMuted: '#a8a29e', // stone-400
   textWhite: '#ffffff',
 
   // Bordes
-  border: '#e4e4e7', // zinc-200
+  border: '#f5e8d2', // border
 
-  // Estados
-  info: '#15803d', // green-700
-  infoLight: '#f0fdf4', // green-50
+  // Estados (acento dorado)
+  info: '#805500', // secondary-foreground (dorado)
+  infoLight: '#fdf2d6', // secondary (dorado claro)
 
   // Secciones
-  mutedSection: '#f4f4f5', // zinc-100
-  footerBackground: '#fafafa', // zinc-50
+  mutedSection: '#f0ebe8', // muted
+  footerBackground: '#faf7f5', // background (crema)
 } as const
+
+// Tipografías del tema: serif (Libre Baskerville) para títulos, sans (Poppins) para texto.
+const FONT_SERIF = "'Libre Baskerville', Georgia, 'Times New Roman', serif"
+const FONT_SANS = "Poppins, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+const FONT_MONO = "'IBM Plex Mono', 'Courier New', monospace"
+
+export const EMAIL_FONTS = { serif: FONT_SERIF, sans: FONT_SANS, mono: FONT_MONO } as const
 
 export const EMAIL_STYLES = {
   pageContainer: {
     backgroundColor: EMAIL_COLORS.pageBackground,
-    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
+    fontFamily: FONT_SANS,
   },
 
   cardContainer: {
     backgroundColor: EMAIL_COLORS.cardBackground,
-    borderRadius: '8px',
+    borderRadius: '6px',
     border: `1px solid ${EMAIL_COLORS.border}`,
     overflow: 'hidden' as const,
+    boxShadow: '0 1px 16px -2px rgba(74, 20, 20, 0.12)',
   },
 
   headerSection: {
     backgroundColor: EMAIL_COLORS.brand,
     color: EMAIL_COLORS.textWhite,
     textAlign: 'center' as const,
-    padding: '16px 0',
+    padding: '20px 0',
   },
 
   codeSection: {
     backgroundColor: EMAIL_COLORS.mutedSection,
     border: `2px dashed ${EMAIL_COLORS.border}`,
-    borderRadius: '8px',
+    borderRadius: '6px',
     padding: '12px 16px',
     textAlign: 'center' as const,
   },
