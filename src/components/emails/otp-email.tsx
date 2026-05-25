@@ -23,35 +23,86 @@ export default function OtpEmail({ otp = '123456', appName = 'Tenis Tracker' }: 
         Tu código de verificación de {appName}: {otp}
       </Preview>
       <Body style={EMAIL_STYLES.pageContainer}>
-        <Container style={{ width: '480px', maxWidth: '100%', margin: '0 auto', padding: '0 16px' }}>
-          <Section style={EMAIL_STYLES.card}>
-            <Section style={EMAIL_STYLES.header}>
-              <Heading
-                style={{ color: EMAIL_COLORS.textWhite, margin: 0, fontSize: '18px', fontWeight: 700 }}
-              >
-                {appName}
-              </Heading>
-              <Text
-                style={{ color: EMAIL_COLORS.textWhite, fontSize: '13px', margin: '4px 0 0 0', opacity: 0.9 }}
-              >
-                Verificación de acceso
-              </Text>
+        <Container style={{ width: '580px', maxWidth: '100%', margin: '0 auto', padding: '16px' }}>
+          <Section style={EMAIL_STYLES.cardContainer}>
+            {/* Header */}
+            <Section style={EMAIL_STYLES.headerSection}>
+              <Container style={{ padding: '0 16px' }}>
+                <Heading
+                  style={{ color: EMAIL_COLORS.textWhite, margin: 0, fontSize: '18px', fontWeight: 'bold' }}
+                >
+                  {appName}
+                </Heading>
+                <Text
+                  style={{ color: EMAIL_COLORS.textWhite, fontSize: '14px', margin: '4px 0 0 0', opacity: 0.9 }}
+                >
+                  Verificación de Acceso Seguro
+                </Text>
+              </Container>
             </Section>
 
-            <Section style={{ padding: '24px' }}>
+            {/* Contenido principal */}
+            <Section style={{ padding: '8px 16px 12px 16px' }}>
               <Heading
-                style={{ color: EMAIL_COLORS.textPrimary, fontSize: '18px', fontWeight: 600, margin: '0 0 8px 0' }}
+                style={{ color: EMAIL_COLORS.textPrimary, fontSize: '18px', fontWeight: '600', margin: '0 0 8px 0' }}
               >
                 Tu código de verificación
               </Heading>
-              <Text style={{ color: EMAIL_COLORS.textSecondary, fontSize: '14px', lineHeight: '1.5', margin: '0 0 8px 0' }}>
-                Ingresá este código para entrar a tu cuenta. Vence en 10 minutos.
+
+              <Text
+                style={{ color: EMAIL_COLORS.textSecondary, fontSize: '14px', lineHeight: '1.5', margin: '0 0 16px 0' }}
+              >
+                Usá el siguiente código de verificación para completar tu inicio de sesión. Este
+                código expirará en 10 minutos.
               </Text>
 
-              <Text style={EMAIL_STYLES.code}>{otp}</Text>
+              {/* Caja del código OTP */}
+              <Section style={{ textAlign: 'center', margin: '0 0 16px 0' }}>
+                <div style={EMAIL_STYLES.codeSection}>
+                  <Text
+                    style={{
+                      color: EMAIL_COLORS.textPrimary,
+                      fontSize: '24px',
+                      fontWeight: 'bold',
+                      letterSpacing: '0.5em',
+                      margin: 0,
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {otp}
+                  </Text>
+                </div>
+              </Section>
 
-              <Text style={{ color: EMAIL_COLORS.textSecondary, fontSize: '12px', lineHeight: '1.5', margin: 0 }}>
-                Si no pediste este código, podés ignorar este correo.
+              <Text
+                style={{ color: EMAIL_COLORS.textSecondary, fontSize: '12px', lineHeight: '1.4', margin: '0 0 12px 0' }}
+              >
+                Por tu seguridad, no compartas este código con nadie. Si no solicitaste este código
+                de verificación, ignorá este email.
+              </Text>
+
+              {/* Aviso de seguridad */}
+              <Section style={EMAIL_STYLES.infoAlert}>
+                <Text
+                  style={{ color: EMAIL_COLORS.info, fontSize: '12px', margin: 0, fontWeight: '500' }}
+                >
+                  🔒 Tip de seguridad: Nunca te pediremos tu código de verificación por teléfono,
+                  email u otro método.
+                </Text>
+              </Section>
+            </Section>
+
+            {/* Footer */}
+            <Section style={EMAIL_STYLES.footerSection}>
+              <Text
+                style={{ color: EMAIL_COLORS.textSecondary, fontSize: '12px', textAlign: 'center', margin: 0 }}
+              >
+                Este email fue enviado como parte de la seguridad de tu cuenta de {appName}.
+              </Text>
+              <Text
+                style={{ color: EMAIL_COLORS.textMuted, fontSize: '12px', textAlign: 'center', margin: '4px 0 0 0' }}
+              >
+                © {new Date().getFullYear()} {appName}. Todos los derechos reservados.
               </Text>
             </Section>
           </Section>
