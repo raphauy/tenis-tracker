@@ -1,0 +1,197 @@
+// Tenis Tracker — schema completo del MVP (Fase 0).
+// Diseño firme en docs/PRPs/tenis-tracker-prp.md § Data Models. Lenguaje en docs/context.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum UserRole {
+  USER
+  SUPERADMIN
+}
+
+enum CatalogStatus {
+  PENDING
+  APPROVED
+}
+
+// El orden del enum es el orden del cuadro (de menor a mayor ronda).
+enum Round {
+  CLASIFICACION
+  R32
+  R16
+  OCTAVOS
+  CUARTOS
+  SEMIFINAL
+  FINAL
+}
+
+enum MatchStatus {
+  SCHEDULED
+  PLAYED
+}
+
+enum MatchType {
+  NORMAL
+  WALKOVER
+  RETIRO
+  BYE
+}
+
+// Lado del partido: yo (el dueño del log) o el rival.
+enum MatchSide {
+  ME
+  OPPONENT
+}
+
+// ---------- Usuarios / auth ----------
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      UserRole @default(USER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entries   Entry[]
+  otpTokens OtpToken[]
+
+  createdVenues      Venue[]      @relation("VenueCreatedBy")
+  createdCategories  Category[]   @relation("CategoryCreatedBy")
+  createdTournaments Tournament[] @relation("TournamentCreatedBy")
+  createdPlayers     Player[]     @relation("PlayerCreatedBy")
+
+  @@index([email])
+  @@index([isActive])
+}
+
+model OtpToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String // 6 dígitos
+  expiresAt DateTime
+  usedAt    DateTime? // single-use; el anterior se invalida al pedir uno nuevo
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---------- Catálogo compartido ----------
+
+model Venue {
+  id           String        @id @default(cuid())
+  name         String
+  status       CatalogStatus @default(PENDING)
+  createdById  String
+  mergedIntoId String? // si fue fusionada a una canónica (Fase 3)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  createdBy   User         @relation("VenueCreatedBy", fields: [createdById], references: [id])
+  tournaments Tournament[]
+
+  @@index([status])
+  @@index([createdById])
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String // etiqueta plana: "7ma", "A", ...
+  status       CatalogStatus @default(PENDING)
+  createdById  String
+  mergedIntoId String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  createdBy User    @relation("CategoryCreatedBy", fields: [createdById], references: [id])
+  entries   Entry[]
+
+  @@index([status])
+  @@index([createdById])
+}
+
+model Tournament {
+  id           String        @id @default(cuid())
+  name         String
+  venueId      String
+  startDate    DateTime?
+  endDate      DateTime?
+  status       CatalogStatus @default(PENDING)
+  createdById  String
+  mergedIntoId String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  venue     Venue   @relation(fields: [venueId], references: [id])
+  createdBy User    @relation("TournamentCreatedBy", fields: [createdById], references: [id])
+  entries   Entry[]
+
+  @@index([status])
+  @@index([venueId])
+  @@index([createdById])
+}
+
+model Player {
+  id          String   @id @default(cuid())
+  name        String
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User    @relation("PlayerCreatedBy", fields: [createdById], references: [id])
+  matches   Match[] // partidos donde es el rival
+
+  @@index([createdById])
+}
+
+// ---------- Carrera privada ----------
+
+model Entry {
+  id           String   @id @default(cuid())
+  userId       String
+  tournamentId String
+  categoryId   String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  category   Category   @relation(fields: [categoryId], references: [id])
+  matches    Match[]
+
+  @@unique([userId, tournamentId, categoryId])
+  @@index([userId])
+}
+
+model Match {
+  id          String      @id @default(cuid())
+  entryId     String
+  round       Round
+  opponentId  String? // null si BYE
+  status      MatchStatus @default(SCHEDULED)
+  type        MatchType   @default(NORMAL)
+  scheduledAt DateTime?
+  winner      MatchSide? // derivado al pasar a PLAYED (null si BYE / aún SCHEDULED)
+  retiredBy   MatchSide? // solo en RETIRO
+  sets        Json? // [{ myGames, oppGames }] ordenado; null en WALKOVER/BYE
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  entry    Entry   @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  opponent Player? @relation(fields: [opponentId], references: [id])
+
+  @@index([entryId])
+  @@index([opponentId])
+}
