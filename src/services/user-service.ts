@@ -58,6 +58,15 @@ export async function updateUserProfile(
   return prisma.user.update({ where: { id }, data })
 }
 
+// Emails de los superadmin activos: destinatarios de la notificación de curado.
+export async function getSuperadminEmails(): Promise<string[]> {
+  const admins = await prisma.user.findMany({
+    where: { role: 'SUPERADMIN', isActive: true },
+    select: { email: true },
+  })
+  return admins.map((a) => a.email)
+}
+
 // Self-signup: crea el usuario (role USER) si no existe. Idempotente por email.
 export async function upsertUserByEmail(email: string) {
   return prisma.user.upsert({
