@@ -77,6 +77,44 @@ Plan por fases secuenciales de la feature. PRP completo en [`tenis-tracker-prp.m
 
 ---
 
+## Fase 1.5 — Perfil público con slug
+
+- **Estado:** pendiente
+- **Objetivo:** cada jugador tiene una URL propia (`/[slug]`, ej. `/raphael-carvalho`) que reemplaza a `/app` como su espacio. El perfil es público por defecto (compartible) o privado, a elección del dueño. El log deja de vivir en una ruta fija y pasa a colgar del slug.
+
+**Decisión técnica de base (cerrada)**
+
+- El slug vive en `User` (la cuenta que loguea), no en el `Player` del catálogo.
+- `/[slug]` en la raíz es viable: Next.js resuelve estático > dinámico, así que `/login`, `/admin`, `/api` ganan siempre sobre `/[slug]`. El costo es mantener una **blocklist de slugs reservados** sincronizada con toda ruta estática top-level (presente y futura) + internos de Next.
+
+**Alcance**
+
+- **Schema:** `User` gana `slug` (único, nullable hasta el onboarding) y `visibility` (público/privado, default público). Migración nueva (esta feature es posterior al "schema completo" de Fase 0).
+- **Onboarding obligatorio:** tras el primer login, si el usuario no tiene slug, se lo fuerza a elegir uno antes de usar la app. Validación de disponibilidad (único) + rechazo de slugs reservados (`login`, `admin`, `api`, internos de Next, y lo que se agregue). El slug queda **fijo** (no editable self-service en el MVP).
+- **Reestructura de rutas:** `/app/*` → `/[slug]/*`. El perfil (`/[slug]`) muestra la timeline; las subrutas de carga/edición (`/[slug]/nuevo`, `/[slug]/participacion/[entryId]`) cuelgan del slug y son **solo del dueño**.
+- **Modo lectura vs. dueño:** un visitante (anónimo o no-dueño) ve la timeline **read-only** (sin acciones de carga/edición); el dueño ve su perfil con todos los controles.
+- **Visibilidad:** página de configuración (`/[slug]/configuracion` o similar) con el toggle público/privado. Si es privado, un no-dueño recibe 404/login.
+- **Stats placeholder:** crear la page de stats del perfil (`/[slug]/stats` o pestaña) con un estado "En desarrollo". Queda enganchada para que, al llegar Fase 2, aparezca sola en el link público.
+- **`proxy.ts` reescrito:** quitar el hardcodeo de `/app`. Reglas: `/[slug]` público accesible sin sesión; privado → login/404 si no es el dueño; subrutas de edición exigen sesión + ser dueño; `/admin` sigue solo SUPERADMIN; `/` con sesión redirige al `/[slug]` propio.
+
+**Fuera de alcance**
+
+- Cambiar el slug self-service (post-MVP; por ahora cambio manual si hace falta).
+- Stats reales (Fase 2): acá solo el placeholder.
+- Compartir/visibilidad granular por torneo, vanity preview/OG, redirects de slugs viejos.
+
+**Dependencias:** Fase 1 hecha. (Fase 2 pasa a depender de esta: el dashboard se monta dentro del perfil.)
+
+**Criterios de "hecha"**
+
+- Un usuario nuevo es forzado a elegir slug en el onboarding; no puede tomar uno reservado ni uno ya usado.
+- El dueño accede a su carrera en `/[slug]` y carga/edita en `/[slug]/nuevo`, etc.; la antigua `/app` ya no existe.
+- Un perfil público es visible read-only sin sesión; uno privado bloquea a no-dueños.
+- `/[slug]/stats` muestra el placeholder; `/` logueado redirige al slug propio; `/login` y `/admin` siguen funcionando.
+- `pnpm typecheck` y `pnpm build` pasan. Validado por el dueño.
+
+---
+
 ## Fase 2 — Estadísticas
 
 - **Estado:** pendiente
@@ -85,13 +123,13 @@ Plan por fases secuenciales de la feature. PRP completo en [`tenis-tracker-prp.m
 **Alcance**
 
 - `stats-service`: récord W/L global + win%; conteo de títulos, finales y semifinales; récord por categoría y por año; head-to-head por rival (dentro del log propio).
-- UI dashboard (`/stats`) RSC, con los cuatro bloques.
+- UI dashboard dentro del perfil (`/[slug]/stats`, reemplaza el placeholder de Fase 1.5) RSC, con los cuatro bloques.
 
 **Fuera de alcance**
 
 - Comparativas entre usuarios / rankings (post-MVP).
 
-**Dependencias:** Fase 1 hecha.
+**Dependencias:** Fase 1.5 hecha (el dashboard vive bajo el slug).
 
 **Criterios de "hecha"**
 
