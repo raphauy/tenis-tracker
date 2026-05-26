@@ -79,7 +79,15 @@ export default async function Home() {
         <p className="max-w-sm text-sm text-muted-foreground/80 text-balance">
           Es gratis. Lo hice para mis propios torneos y lo dejo por si a alguien más le
           sirve.
-          <span className="mt-1 block italic">— Raphael</span>
+          <span className="mt-1 block italic">
+            —{' '}
+            <Link
+              href="/raphael-carvalho"
+              className="underline decoration-dotted underline-offset-2 hover:text-foreground"
+            >
+              Raphael
+            </Link>
+          </span>
         </p>
         <Actions loggedInHref={loggedInHref} />
       </section>
