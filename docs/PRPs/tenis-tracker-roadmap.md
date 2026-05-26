@@ -141,7 +141,7 @@ Plan por fases secuenciales de la feature. PRP completo en [`tenis-tracker-prp.m
 
 ## Fase 3 — Catálogo compartido + moderación
 
-- **Estado:** pendiente
+- **Estado:** en curso
 - **Objetivo:** prender lo social/curado del catálogo: lo que un usuario crea puede volverse canónico y disponible para todos tras el curado del superadmin.
 
 **Alcance**

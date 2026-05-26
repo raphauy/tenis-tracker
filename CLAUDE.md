@@ -91,11 +91,16 @@ if (!validated.success) return { success: false, error: 'Datos inválidos' }
 
 ### UI Components
 ```typescript
+// SIEMPRE los componentes de src/components/ui/* (shadcn sobre Base UI). HTML crudo solo para
+//   layout (div/ul/form/...); NUNCA para controles (usar Input/Button/Select/etc., no <input>/<button>).
 // "use client" SOLO cuando hace falta (forms, clicks, hooks de estado)
 // Suspense + Skeleton para loading (NO loading.tsx)
 <Suspense fallback={<ThingsSkeleton />}>
   <ThingsList />
 </Suspense>
+
+// Captura de datos = SIEMPRE <form onSubmit> + <Button type="submit"> (para que Enter envíe),
+//   aunque sea un solo campo en un diálogo. Patrón en docs/dev/base-ui-gotchas.md §8.
 ```
 
 ## Naming Conventions
@@ -123,6 +128,8 @@ if (!validated.success) return { success: false, error: 'Datos inválidos' }
 - Usar try-catch en services (solo en actions)
 - Crear clases para services (usar funciones)
 - Usar `loading.tsx` (usar Suspense + Skeleton)
+- Usar HTML crudo para controles (input/button/select) en vez de `src/components/ui/*`
+- Botón primario de captura fuera de un `<form>` con `type="submit"` (rompe el Enter)
 
 ## Database
 

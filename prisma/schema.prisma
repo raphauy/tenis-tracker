@@ -153,11 +153,12 @@ model Tournament {
 }
 
 model Player {
-  id          String   @id @default(cuid())
-  name        String
-  createdById String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  createdById  String
+  mergedIntoId String? // si fue fusionado a un canónico (Fase 3)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   createdBy User    @relation("PlayerCreatedBy", fields: [createdById], references: [id])
   matches   Match[] // partidos donde es el rival

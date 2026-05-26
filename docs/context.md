@@ -72,8 +72,13 @@ Estado derivado de la Participación según el último partido + su ronda: `Camp
 
 **Catálogo compartido**:
 Entidades globales reutilizables: **Torneo, Categoría, Sede** (curadas) y **Jugador** (sin gate). Cada entrada tiene `createdBy` y, las curadas, un `status`.
-- _Estados (Torneo/Categoría/Sede)_: `pending` (visible y usable **solo por su creador**) → `approved` (disponible para todos). El superadmin aprueba o **fusiona/reasigna** duplicados a la entrada canónica.
-- _Jugador_: compartido sin aprobación (creación libre). Dedup con IA queda post-MVP.
+- _Estados (Torneo/Categoría/Sede)_: `pending` (visible y usable **solo por su creador**) → `approved` (disponible para todos). El superadmin aprueba o **fusiona** duplicados a la entrada canónica.
+- _Jugador_: compartido sin aprobación (creación libre). El superadmin igual puede **fusionar** duplicados y corregir typos del nombre a mano. Dedup **automático con IA** queda post-MVP.
+
+**Fusión**:
+Acción del superadmin que marca una entrada del catálogo como duplicada de otra **canónica** (el destino debe estar `approved`; para Jugador, cualquier otro no fusionado). Reapunta todas las referencias (de todos los usuarios) a la canónica y **archiva** la duplicada vía `mergedIntoId`. Una entrada con `mergedIntoId` no aparece en ninguna lista ni autocomplete. Si reapuntar choca con la unicidad de una **Participación** (`user+torneo+categoría`), se mueven sus **Partidos** a la participación canónica y se borra la vacía.
+_Código_: `mergedIntoId` (en Venue/Category/Tournament/Player).
+_Evitar_: "reasignar" como sinónimo confuso — la fusión es reapuntar + archivar, no reasignar de dueño.
 
 **Usuario / Superadmin**:
 `Usuario`: registra su carrera privada (Participaciones, Partidos) y crea entradas de catálogo. `Superadmin`: ve y edita todo, y gestiona la cola de curado. Auth por OTP (NextAuth v5). El Superadmin es además un jugador con su propio Perfil (no un rol "solo moderador").

@@ -60,6 +60,24 @@ componente de menú/lista, reemplazar `cursor-default` → `cursor-pointer` en s
 shadcn original). Ya hecho en `dropdown-menu.tsx`; `select.tsx` ya venía con `cursor-pointer` en sus
 items. Ver memoria [[ui-cursor-pointer]].
 
+### 8. Submit con Enter: envolver en `<form>` + botón `type="submit"`
+Ni shadcn ni Base UI dan submit-con-Enter "gratis". Un diálogo/sección con inputs cuyo botón
+primario es un `<Button onClick>` dentro de un `<div>` **no** dispara al apretar Enter. El patrón del
+proyecto (ver `login-form.tsx`, `onboarding-form.tsx`) es:
+```tsx
+<form onSubmit={handle} className="contents">   {/* `contents` no rompe el grid del DialogContent */}
+  <Input … autoFocus />
+  <DialogFooter>
+    <DialogClose render={<Button type="button" variant="outline" />}>Cancelar</DialogClose>
+    <Button type="submit" disabled={…}>Guardar</Button>
+  </DialogFooter>
+</form>
+```
+- `handle` hace `e.preventDefault()` y corta temprano si está `saving` o el form es inválido.
+- El `Button` del proyecto (Base UI) por defecto **no** es submit: marcar `type="submit"` el primario y
+  `type="button"` el resto (cancelar/close), si no, todos disparan el submit.
+- Toda captura de datos del usuario va en un `<form>`, aunque sea un solo campo en un diálogo.
+
 ## Si algo "se queda Rendering" estando logueado
 Suele ser un client component que crashea (no un loop de proxy). Reproducir con el skill
 `agent-browser`: abrir la página, `click` el elemento, `agent-browser errors` / `screenshot` para
