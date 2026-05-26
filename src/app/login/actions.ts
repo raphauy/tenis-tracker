@@ -4,10 +4,7 @@ import { z } from 'zod'
 import { upsertUserByEmail } from '@/services/user-service'
 import { generateOtp, createOtpToken, OTP_EXPIRY_MINUTES } from '@/services/auth-service'
 import { sendOtpEmail } from '@/services/email-service'
-
-type ActionResult<T = unknown> =
-  | { success: true; data?: T }
-  | { success: false; error: string }
+import type { ActionResult } from '@/lib/types'
 
 const emailSchema = z.object({ email: z.string().email() })
 

@@ -1,30 +1,35 @@
-import { auth, signOut } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
+import { Suspense } from "react";
+import Link from "next/link";
+import { signOut } from "@/lib/auth";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Timeline } from "./timeline";
+import { TimelineSkeleton } from "./timeline-skeleton";
 
-export default async function AppHomePage() {
-  const session = await auth();
-
+export default function AppHomePage() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-24 text-center">
-      <div className="flex flex-col items-center gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Mi carrera</h1>
-        <p className="text-muted-foreground">Próximamente: tu línea de tiempo de torneos.</p>
-        {session?.user?.email && (
-          <p className="text-sm text-muted-foreground">
-            Sesión: {session.user.email}
-          </p>
-        )}
-      </div>
-      <form
-        action={async () => {
-          "use server";
-          await signOut({ redirectTo: "/" });
-        }}
-      >
-        <Button type="submit" variant="outline">
-          Cerrar sesión
-        </Button>
-      </form>
+    <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-10">
+      <header className="mb-8 flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold tracking-tight">Mis torneos</h1>
+        <div className="flex items-center gap-2">
+          <Link href="/app/nuevo" className={buttonVariants({ variant: "default" })}>
+            + Nuevo torneo
+          </Link>
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/" });
+            }}
+          >
+            <Button type="submit" variant="ghost" size="sm">
+              Cerrar sesión
+            </Button>
+          </form>
+        </div>
+      </header>
+
+      <Suspense fallback={<TimelineSkeleton />}>
+        <Timeline />
+      </Suspense>
     </main>
   );
 }

@@ -76,7 +76,8 @@
 :root {
   --background: oklch(0.9779 0.0042 56.3756);
   --foreground: oklch(0.2178 0 0);
-  --card: oklch(0.9779 0.0042 56.3756);
+  /* Card un poco más clara que el fondo (warm white) para que las tarjetas tengan contraste. */
+  --card: oklch(0.9985 0.0035 56.3756);
   --card-foreground: oklch(0.2178 0 0);
   --popover: oklch(0.9779 0.0042 56.3756);
   --popover-foreground: oklch(0.2178 0 0);
@@ -194,5 +195,26 @@
   }
   html {
     @apply font-sans;
+  }
+}
+@layer utilities {
+  /* Scrollbar fina y delicada (dropdowns, listas scrolleables). */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--foreground) 22%, transparent) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklab, var(--foreground) 22%, transparent);
+    border-radius: 9999px;
+  }
+  .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklab, var(--foreground) 38%, transparent);
   }
 }

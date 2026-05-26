@@ -22,7 +22,7 @@ Plan por fases secuenciales de la feature. PRP completo en [`tenis-tracker-prp.m
 
 ## Fase 0 — Fundaciones
 
-- **Estado:** en curso
+- **Estado:** hecha
 - **Objetivo:** dejar el proyecto listo para construir features: stack de datos, auth con roles, schema **completo** del MVP y seeds reales. Al cerrar esta fase no hacen falta más migraciones para el MVP.
 
 **Alcance**
@@ -50,7 +50,7 @@ Plan por fases secuenciales de la feature. PRP completo en [`tenis-tracker-prp.m
 
 ## Fase 1 — Log personal (core + timeline)
 
-- **Estado:** pendiente
+- **Estado:** hecha
 - **Objetivo:** el usuario registra su carrera de punta a punta y la ve en la línea de tiempo. Es la fase que ya le da valor real al dueño.
 
 **Alcance**

@@ -27,8 +27,9 @@ Reglas:
 ### Carrera y registro
 
 **Torneo**:
-Evento competitivo (ej: "Grados AUT 3a, 5a, 7a", "Torneo La Academia MG 2026"). Tiene nombre, fechas y una **Sede**. Puede ofrecer varias **Categorías**, pero el usuario juega una. Vive en el catálogo compartido (curado).
+Evento competitivo (ej: "Grados AUT 3a, 5a, 7a", "Torneo La Academia MG 2026"). Tiene nombre, fecha (mes/año, obligatoria — ordena la timeline) y una **Sede**. Puede ofrecer varias **Categorías**, pero el usuario juega una. Vive en el catálogo compartido (curado).
 _Código_: `Tournament`.
+_Etapa/edición/fecha_: las ediciones recurrentes (ej. "AUT Grados" cada 2 meses) se modelan en el MVP como **Torneos planos distintos**, con la fecha en el nombre ("AUT Grados febrero 2026"). NO hay entidad serie/circuito que las agrupe (post-MVP).
 
 **Categoría**:
 Nivel de juego dentro de un torneo. Su vocabulario depende del organizador: Grados AUT usa `2da`–`7ma`; Academia MG usa `A`–`E`. Se modela como etiqueta curada plana (no hay entidad "serie/circuito" en el MVP).
@@ -62,7 +63,7 @@ _Código_: `Player`.
 _Evitar_: usar "rival" como entidad — "rival" es el rol, no la entidad.
 
 **Resultado (marcador)**:
-Estructurado por sets: por cada set, games del usuario vs games del rival. El 3er set puede ser super tie-break a 10 (sin diferencia de 2). El ganador del partido se deriva.
+Estructurado por sets ordenados: por cada set, games del usuario vs games del rival. Un set puede definirse en tie-break (7-6), guardando el desglose del tie-break. El set decisivo puede ser un **super tie-break** (reemplaza al 3er set); su modo varía por torneo —"a morir a 10" o "a diferencia de 2"— pero la app no lo guarda ni valida la regla. El ganador del partido se deriva contando sets ganados (el super tie-break cuenta como un set; gana quien tiene más en cada uno). Si el usuario gana 2 sets no hay super tie-break.
 
 **Resultado del torneo**:
 Estado derivado de la Participación según el último partido + su ronda: `Campeón` (ganó la Final), `Finalista` (perdió la Final), `Semifinalista` y demás "eliminado en {Ronda}", o `En curso` si hay un partido Programado pendiente.
