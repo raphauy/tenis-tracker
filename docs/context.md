@@ -76,4 +76,27 @@ Entidades globales reutilizables: **Torneo, Categoría, Sede** (curadas) y **Jug
 - _Jugador_: compartido sin aprobación (creación libre). Dedup con IA queda post-MVP.
 
 **Usuario / Superadmin**:
-`Usuario`: registra su carrera privada (Participaciones, Partidos) y crea entradas de catálogo. `Superadmin`: ve y edita todo, y gestiona la cola de curado. Auth por OTP (NextAuth v5).
+`Usuario`: registra su carrera privada (Participaciones, Partidos) y crea entradas de catálogo. `Superadmin`: ve y edita todo, y gestiona la cola de curado. Auth por OTP (NextAuth v5). El Superadmin es además un jugador con su propio Perfil (no un rol "solo moderador").
+
+### Identidad y perfil
+
+**Perfil**:
+Página pública de un jugador en `/[slug]` que muestra su carrera (Timeline de torneos + Estadísticas). Para terceros es **read-only**; para el dueño trae los controles de carga/edición. Si la **Visibilidad** es privada, un tercero ve una página "perfil privado" (con el nombre, sin el contenido).
+_Código_: ruta dinámica raíz `/[slug]` (reemplazó a `/app`).
+_Evitar_: usar "perfil" para la página de edición de la cuenta — eso es **Ajustes**.
+
+**Slug**:
+Identificador único del jugador en la URL (ej. `raphael-carvalho`). Se elige en el **Onboarding** y queda **fijo** (no editable self-service en el MVP). Formato `[a-z0-9-]`, 3–30 chars, único case-insensitive; no puede ser una palabra **reservada** (rutas de primer nivel como `login`, `admin`, `api`, `ajustes`, etc. + internos de Next).
+_Código_: `User.slug`.
+_Evitar_: "username", "handle".
+
+**Visibilidad**:
+Estado público/privado del Perfil, elegido por el dueño en **Ajustes**. Default **público**. Privado oculta el contenido a terceros (ven "perfil privado"); el dueño siempre ve todo.
+_Código_: `User.visibility` (o equivalente).
+
+**Onboarding**:
+Paso obligatorio tras el primer login: el usuario elige **nombre** (campo libre) y **Slug** (autosugerido desde el nombre, editable). Sin slug no puede usar la app (el `proxy.ts` lo fuerza). No pide foto ni visibilidad (eso queda para Ajustes).
+
+**Ajustes**:
+Página `/[slug]/ajustes` donde el dueño edita su **nombre** y **foto** (avatar) y cambia la **Visibilidad**. El **Slug** se muestra read-only (fijo).
+_Evitar_: llamarla "perfil".
