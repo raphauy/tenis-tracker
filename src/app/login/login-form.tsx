@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { signIn, getSession } from 'next-auth/react'
+import { signIn } from 'next-auth/react'
 import { toast } from 'sonner'
 import { getPostLoginUrl } from '@/lib/auth-redirect'
 import { Button } from '@/components/ui/button'
@@ -29,6 +29,9 @@ export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl')
+  // El backend hace upsert: registrarse e iniciar sesión son el mismo flujo. El
+  // `mode` solo cambia el copy, según el botón de la landing que trajo al usuario.
+  const isSignup = searchParams.get('mode') === 'signup'
 
   const [step, setStep] = useState<Step>('email')
   const [email, setEmail] = useState('')
@@ -61,9 +64,8 @@ export function LoginForm() {
       setOtp('')
       return
     }
-    // Destino: callbackUrl si vino del proxy, si no el dashboard según rol.
-    const session = await getSession()
-    router.push(callbackUrl || getPostLoginUrl(session?.user?.role))
+    // Destino: callbackUrl si vino del proxy, si no la raíz (el proxy redirige a /[slug] u /onboarding).
+    router.push(callbackUrl || getPostLoginUrl())
     router.refresh()
   }
 
@@ -76,12 +78,16 @@ export function LoginForm() {
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
         <CardTitle className="text-center text-2xl font-bold">
-          {step === 'email' ? 'Iniciar sesión' : 'Verificar código'}
+          {step === 'email'
+            ? isSignup
+              ? 'Creá tu cuenta'
+              : 'Iniciá sesión'
+            : 'Verificar código'}
         </CardTitle>
         <CardDescription className="text-center">
           {step === 'email'
-            ? 'Ingresa tu email para recibir un código de acceso'
-            : `Ingresa el código de 6 dígitos enviado a ${email}`}
+            ? 'Ingresá tu email para recibir un código de acceso'
+            : `Ingresá el código de 6 dígitos enviado a ${email}`}
         </CardDescription>
       </CardHeader>
       <CardContent>

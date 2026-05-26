@@ -22,7 +22,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
-import { createTournamentAction, createVenueAction } from '@/app/app/actions'
+import { createTournamentAction, createVenueAction } from '@/app/[slug]/actions'
 
 const MONTHS = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',

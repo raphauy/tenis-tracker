@@ -1,6 +1,5 @@
-// Destino post-login según el rol. Función pura: usable en server (page) y client (form).
-// Reusable para cualquier redirect basado en rol (ej. al entrar a /login ya logueado).
-export function getPostLoginUrl(role?: string | null): string {
-  if (role === 'SUPERADMIN') return '/admin'
-  return '/app'
+// Destino post-login. Siempre la raíz: el proxy resuelve `/` → /[slug] del usuario
+// (o /onboarding si todavía no eligió slug), sin que el cliente necesite conocer el slug.
+export function getPostLoginUrl(): string {
+  return '/'
 }

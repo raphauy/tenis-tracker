@@ -5,10 +5,10 @@ import { getPostLoginUrl } from '@/lib/auth-redirect'
 import { LoginForm } from './login-form'
 
 export default async function LoginPage() {
-  // Si ya hay sesión, no mostrar el login: mandar a donde corresponde por rol.
+  // Si ya hay sesión, no mostrar el login: el proxy resuelve `/` → /[slug] u /onboarding.
   const session = await auth()
   if (session?.user) {
-    redirect(getPostLoginUrl(session.user.role))
+    redirect(getPostLoginUrl())
   }
 
   return (

@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { requireUser } from '@/lib/auth-helpers'
+import { notFound } from 'next/navigation'
+import { resolveProfile } from '@/lib/profile'
 import { getTournamentsForUser } from '@/services/tournament-service'
 import { getVenuesForUser } from '@/services/venue-service'
 import { getCategoriesForUser } from '@/services/category-service'
@@ -7,20 +8,24 @@ import { getPlayersForUser } from '@/services/player-service'
 import { buttonVariants } from '@/components/ui/button'
 import { LoadWizard } from './load-wizard'
 
-export default async function NuevoTorneoPage() {
-  const user = await requireUser()
+export default async function NuevoTorneoPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const { owner, isOwner } = await resolveProfile(slug)
+  if (!isOwner) notFound() // cargar es solo del dueño
+
+  const u = { id: owner.id, role: owner.role }
   const [tournaments, venues, categories, players] = await Promise.all([
-    getTournamentsForUser(user),
-    getVenuesForUser(user),
-    getCategoriesForUser(user),
-    getPlayersForUser(user.id),
+    getTournamentsForUser(u),
+    getVenuesForUser(u),
+    getCategoriesForUser(u),
+    getPlayersForUser(owner.id),
   ])
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-6 py-10">
       <header className="mb-8 flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Nuevo torneo</h1>
-        <Link href="/app" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+        <Link href={`/${slug}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
           Volver
         </Link>
       </header>

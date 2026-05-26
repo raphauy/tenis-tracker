@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { PencilIcon, Trash2Icon } from 'lucide-react'
 import { Round, MatchType, MatchStatus, MatchSide } from '@prisma/client'
@@ -32,7 +32,7 @@ import {
   deleteEntryAction,
   createPlayerAction,
   deletePlayerAction,
-} from '@/app/app/actions'
+} from '@/app/[slug]/actions'
 
 export type SerializedMatch = {
   id: string
@@ -87,6 +87,7 @@ export function EntryDetail({
   players,
 }: Props) {
   const router = useRouter()
+  const { slug } = useParams<{ slug: string }>()
   const [addOpen, setAddOpen] = React.useState(false)
   const [editing, setEditing] = React.useState<SerializedMatch | null>(null)
   const [deletingMatch, setDeletingMatch] = React.useState<SerializedMatch | null>(null)
@@ -98,7 +99,7 @@ export function EntryDetail({
   )
 
   async function handleAdd(payload: MatchPayload) {
-    const res = await addMatchAction({ entryId, match: payload })
+    const res = await addMatchAction({ entryId, match: payload }, slug)
     if (res.success) {
       toast.success('Partido agregado')
       setAddOpen(false)
@@ -109,7 +110,7 @@ export function EntryDetail({
 
   async function handleEdit(payload: MatchPayload) {
     if (!editing) return { success: false as const, error: 'Sin partido' }
-    const res = await updateMatchAction({ ...payload, id: editing.id })
+    const res = await updateMatchAction({ ...payload, id: editing.id }, slug)
     if (res.success) {
       toast.success('Partido actualizado')
       setEditing(null)
@@ -120,7 +121,7 @@ export function EntryDetail({
 
   async function confirmDeleteMatch() {
     if (!deletingMatch) return
-    const res = await deleteMatchAction(deletingMatch.id)
+    const res = await deleteMatchAction(deletingMatch.id, slug)
     if (res.success) {
       toast.success('Partido borrado')
       setDeletingMatch(null)
@@ -131,10 +132,10 @@ export function EntryDetail({
   }
 
   async function confirmDeleteEntry() {
-    const res = await deleteEntryAction(entryId)
+    const res = await deleteEntryAction(entryId, slug)
     if (res.success) {
       toast.success('Participación borrada')
-      router.push('/app')
+      router.push(`/${slug}`)
     } else {
       toast.error(res.error)
     }

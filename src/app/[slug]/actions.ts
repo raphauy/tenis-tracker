@@ -96,11 +96,14 @@ export async function createTournamentAction(input: {
 }
 
 // Alta completa (wizard): crea/reusa Participación + primer partido (atómico).
-export async function createEntryWithMatchAction(input: {
-  tournamentId: string
-  categoryId: string
-  match: unknown
-}): Promise<ActionResult<{ entryId: string }>> {
+export async function createEntryWithMatchAction(
+  input: {
+    tournamentId: string
+    categoryId: string
+    match: unknown
+  },
+  slug: string
+): Promise<ActionResult<{ entryId: string }>> {
   const entry = createEntrySchema.safeParse({
     tournamentId: input.tournamentId,
     categoryId: input.categoryId,
@@ -113,7 +116,7 @@ export async function createEntryWithMatchAction(input: {
   try {
     const user = await requireUser()
     const result = await createEntryWithMatch(entry.data, match.data, user.id)
-    revalidatePath('/app')
+    revalidatePath(`/${slug}`)
     return { success: true, data: result }
   } catch (error) {
     return { success: false, error: errorMessage(error, 'No se pudo crear la participación') }
@@ -121,10 +124,13 @@ export async function createEntryWithMatchAction(input: {
 }
 
 // Agregar un partido a una Participación existente.
-export async function addMatchAction(input: {
-  entryId: string
-  match: unknown
-}): Promise<ActionResult> {
+export async function addMatchAction(
+  input: {
+    entryId: string
+    match: unknown
+  },
+  slug: string
+): Promise<ActionResult> {
   const match = matchPayloadSchema.safeParse(input.match)
   if (!match.success) {
     return { success: false, error: match.error.issues[0]?.message ?? 'Datos del partido inválidos' }
@@ -133,15 +139,15 @@ export async function addMatchAction(input: {
   try {
     const user = await requireUser()
     await createMatch(prisma, input.entryId, match.data, user.id)
-    revalidatePath('/app')
-    revalidatePath(`/app/participacion/${input.entryId}`)
+    revalidatePath(`/${slug}`)
+    revalidatePath(`/${slug}/participacion/${input.entryId}`)
     return { success: true }
   } catch (error) {
     return { success: false, error: errorMessage(error, 'No se pudo agregar el partido') }
   }
 }
 
-export async function updateMatchAction(input: unknown): Promise<ActionResult> {
+export async function updateMatchAction(input: unknown, slug: string): Promise<ActionResult> {
   const parsed = updateMatchSchema.safeParse(input)
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? 'Datos del partido inválidos' }
@@ -149,30 +155,30 @@ export async function updateMatchAction(input: unknown): Promise<ActionResult> {
   try {
     const user = await requireUser()
     const match = await updateMatch(parsed.data, user.id)
-    revalidatePath('/app')
-    revalidatePath(`/app/participacion/${match.entryId}`)
+    revalidatePath(`/${slug}`)
+    revalidatePath(`/${slug}/participacion/${match.entryId}`)
     return { success: true }
   } catch (error) {
     return { success: false, error: errorMessage(error, 'No se pudo actualizar el partido') }
   }
 }
 
-export async function deleteMatchAction(id: string): Promise<ActionResult> {
+export async function deleteMatchAction(id: string, slug: string): Promise<ActionResult> {
   try {
     const user = await requireUser()
     await deleteMatch(id, user.id)
-    revalidatePath('/app')
+    revalidatePath(`/${slug}`)
     return { success: true }
   } catch (error) {
     return { success: false, error: errorMessage(error, 'No se pudo borrar el partido') }
   }
 }
 
-export async function deleteEntryAction(id: string): Promise<ActionResult> {
+export async function deleteEntryAction(id: string, slug: string): Promise<ActionResult> {
   try {
     const user = await requireUser()
     await deleteEntry(id, user.id)
-    revalidatePath('/app')
+    revalidatePath(`/${slug}`)
     return { success: true }
   } catch (error) {
     return { success: false, error: errorMessage(error, 'No se pudo borrar la participación') }

@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { MatchPayload } from '@/lib/validations/match'
@@ -15,7 +15,7 @@ import {
   createCategoryAction,
   createPlayerAction,
   deletePlayerAction,
-} from '@/app/app/actions'
+} from '@/app/[slug]/actions'
 
 type Props = {
   tournaments: ComboOption[]
@@ -28,6 +28,7 @@ const STEPS = ['Torneo', 'Categoría', 'Partido'] as const
 
 export function LoadWizard({ tournaments, venues, categories, players }: Props) {
   const router = useRouter()
+  const { slug } = useParams<{ slug: string }>()
   const [step, setStep] = React.useState<0 | 1 | 2>(0)
   const [tournamentId, setTournamentId] = React.useState<string | null>(null)
   const [tournamentLabel, setTournamentLabel] = React.useState<string | null>(null)
@@ -67,10 +68,10 @@ export function LoadWizard({ tournaments, venues, categories, players }: Props) 
     if (!tournamentId || !categoryId) {
       return { success: false as const, error: 'Faltan torneo o categoría' }
     }
-    const res = await createEntryWithMatchAction({ tournamentId, categoryId, match })
+    const res = await createEntryWithMatchAction({ tournamentId, categoryId, match }, slug)
     if (res.success) {
       toast.success('Torneo cargado')
-      router.push('/app')
+      router.push(`/${slug}`)
     }
     return res
   }

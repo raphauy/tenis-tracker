@@ -23,6 +23,12 @@ enum CatalogStatus {
   APPROVED
 }
 
+// Visibilidad del Perfil público (/[slug]).
+enum Visibility {
+  PUBLIC
+  PRIVATE
+}
+
 // El orden del enum es el orden del cuadro (de menor a mayor ronda).
 enum Round {
   CLASIFICACION
@@ -55,13 +61,16 @@ enum MatchSide {
 // ---------- Usuarios / auth ----------
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  role      UserRole @default(USER)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String     @id @default(cuid())
+  email      String     @unique
+  name       String?
+  slug       String?    @unique // URL pública del jugador; se elige en el onboarding y queda fija
+  visibility Visibility @default(PUBLIC)
+  image      String?    // URL del avatar (Vercel Blob)
+  role       UserRole   @default(USER)
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
   entries   Entry[]
   otpTokens OtpToken[]

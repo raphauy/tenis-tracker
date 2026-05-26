@@ -111,6 +111,10 @@ if (!validated.success) return { success: false, error: 'Datos inválidos' }
 - `middleware.ts` fue reemplazado por `proxy.ts` en Next.js 16
 - Usar `src/proxy.ts` para interceptar requests
 
+### UI: shadcn sobre Base UI (NO Radix)
+- `components.json` usa `"style": "base-nova"` → los primitives son **Base UI** (`@base-ui/react/*`), no Radix. La API difiere del shadcn clásico que asume el conocimiento general.
+- Antes de usar un primitive nuevo, leer `src/components/ui/<comp>.tsx`. Gotchas documentados en `docs/dev/base-ui-gotchas.md` (ej.: `render` en vez de `asChild`; `Menu.GroupLabel` requiere `Menu.Group`; los items traen `cursor-default` → cambiar a `cursor-pointer`).
+
 ### What NOT to Do
 - Escribir strings en español sin tildes (á, é, í, ó, ú, ñ)
 - Usar Prisma fuera de services

@@ -1,14 +1,21 @@
-import { requireUser } from '@/lib/auth-helpers'
 import { getEntriesForUser } from '@/services/entry-service'
 import { deriveTournamentResult } from '@/lib/tennis/derive'
 import { parseSets } from '@/lib/tennis/set-score'
 import { TimelineList, type TimelineEntry } from './timeline-list'
 
-// Línea de tiempo de Participaciones del usuario (más reciente primero), con resultado derivado.
+// Línea de tiempo de Participaciones del dueño del Perfil (más reciente primero), con resultado derivado.
 // Serializa todo y delega el filtrado/render al cliente (dataset chico → búsqueda instantánea).
-export async function Timeline() {
-  const user = await requireUser()
-  const entries = await getEntriesForUser(user.id)
+// El visitante (no dueño) la ve read-only: sin acciones de carga/edición.
+export async function Timeline({
+  ownerId,
+  slug,
+  isOwner,
+}: {
+  ownerId: string
+  slug: string
+  isOwner: boolean
+}) {
+  const entries = await getEntriesForUser(ownerId)
 
   const serialized: TimelineEntry[] = entries.map((entry) => ({
     id: entry.id,
@@ -29,5 +36,5 @@ export async function Timeline() {
     })),
   }))
 
-  return <TimelineList entries={serialized} />
+  return <TimelineList entries={serialized} slug={slug} isOwner={isOwner} />
 }

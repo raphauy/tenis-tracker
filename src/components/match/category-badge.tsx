@@ -42,7 +42,7 @@ export function CategoryBadge({ name, className }: { name: string; className?: s
   return (
     <span
       className={cn(
-        'inline-flex h-5 min-w-11 shrink-0 items-center justify-center rounded-full px-2 text-xs font-semibold',
+        'inline-flex h-5 min-w-11 shrink-0 items-center justify-center rounded-full border border-black/10 px-2 text-xs font-semibold dark:border-white/15',
         toneFor(name),
         className
       )}

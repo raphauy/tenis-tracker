@@ -90,7 +90,9 @@ export function CatalogCombobox({
   // Sincroniza el texto del input con la opción seleccionada (incluye selección externa,
   // ej. al crear un torneo desde el diálogo). El tipeo no cambia `value`, así que no interfiere.
   const onSelectRef = React.useRef(onSelect)
-  onSelectRef.current = onSelect
+  React.useEffect(() => {
+    onSelectRef.current = onSelect
+  })
   React.useEffect(() => {
     setQuery(selectedItem?.label ?? '')
     onSelectRef.current?.(selectedItem ? { id: selectedItem.value, label: selectedItem.label } : null)

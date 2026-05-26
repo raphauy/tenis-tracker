@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { requireUser } from '@/lib/auth-helpers'
+import { resolveProfile } from '@/lib/profile'
 import { getEntryById } from '@/services/entry-service'
 import { getPlayersForUser } from '@/services/player-service'
 import { deriveTournamentResult } from '@/lib/tennis/derive'
@@ -16,14 +16,15 @@ function formatMonthYear(date: Date | null): string {
 export default async function ParticipacionPage({
   params,
 }: {
-  params: Promise<{ entryId: string }>
+  params: Promise<{ slug: string; entryId: string }>
 }) {
-  const { entryId } = await params
-  const user = await requireUser()
+  const { slug, entryId } = await params
+  const { owner, isOwner } = await resolveProfile(slug)
+  if (!isOwner) notFound() // el detalle editable es solo del dueño
 
   const [entry, players] = await Promise.all([
-    getEntryById(entryId, user.id),
-    getPlayersForUser(user.id),
+    getEntryById(entryId, owner.id),
+    getPlayersForUser(owner.id),
   ])
   if (!entry) notFound()
 
@@ -43,7 +44,7 @@ export default async function ParticipacionPage({
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-10">
       <div className="mb-6">
-        <Link href="/app" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+        <Link href={`/${slug}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
           ← Volver a mis torneos
         </Link>
       </div>
