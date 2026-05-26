@@ -6,7 +6,7 @@ import { SearchIcon, XIcon } from 'lucide-react'
 import { Round, MatchType, MatchStatus, MatchSide } from '@prisma/client'
 import type { EntryResult } from '@/lib/tennis/derive'
 import { ROUND_ORDER } from '@/lib/tennis/derive'
-import { ROUND_LABELS } from '@/lib/tennis/labels'
+import { ROUND_LABELS_SHORT } from '@/lib/tennis/labels'
 import type { SetScore } from '@/lib/tennis/set-score'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -25,7 +25,7 @@ import {
   AccordionContent,
 } from '@/components/ui/accordion'
 import { ResultBadge } from '@/components/match/result-badge'
-import { ScoreDisplay } from '@/components/match/score-display'
+import { ScoreText, WinLoss } from '@/components/match/score-display'
 import { CategoryBadge } from '@/components/match/category-badge'
 
 export type TimelineEntry = {
@@ -278,7 +278,7 @@ export function TimelineList({
               >
                 <AccordionTrigger className="py-3.5">
                   <div className="flex flex-1 flex-col gap-4 pr-8">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
                       <span className="font-medium">{entry.tournamentName}</span>
                       <ResultBadge result={entry.result} />
                     </div>
@@ -294,13 +294,21 @@ export function TimelineList({
                     {matches.map((m) => (
                       <div
                         key={m.id}
-                        className="flex items-center justify-between gap-3 border-t py-2 text-sm first:border-t-0"
+                        className="flex items-start justify-between gap-3 border-t py-2 text-sm first:border-t-0"
                       >
-                        <span className="w-28 shrink-0 text-muted-foreground">
-                          {ROUND_LABELS[m.round]}
+                        <span className="w-16 shrink-0 pt-0.5 text-muted-foreground">
+                          {ROUND_LABELS_SHORT[m.round]}
                         </span>
-                        <span className="flex-1 truncate">{m.opponentName ?? '—'}</span>
-                        <ScoreDisplay type={m.type} status={m.status} winner={m.winner} sets={m.sets} />
+                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <span className="truncate">{m.opponentName ?? '—'}</span>
+                          <ScoreText
+                            type={m.type}
+                            status={m.status}
+                            sets={m.sets}
+                            className="text-xs text-muted-foreground"
+                          />
+                        </div>
+                        <WinLoss winner={m.winner} className="mt-0.5 shrink-0" />
                       </div>
                     ))}
                     {isOwner && (

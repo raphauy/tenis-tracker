@@ -1,38 +1,9 @@
 import Link from 'next/link'
 import { BarChart3Icon, ClipboardListIcon, Share2Icon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { TimelinePreview } from '@/components/landing/timeline-preview'
+import { CtaActions } from '@/components/landing/cta-actions'
 import { auth } from '@/lib/auth'
 import { getViewerChrome } from '@/services/user-service'
-
-// `loggedInHref`: si el visitante está logueado, a dónde lleva su CTA (su perfil u onboarding).
-// Si es null, es anónimo y se muestran los botones de registro/acceso.
-function Actions({ loggedInHref }: { loggedInHref: string | null }) {
-  if (loggedInHref) {
-    return (
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <Button size="lg" nativeButton={false} render={<Link href={loggedInHref} />}>
-          Ir a mis torneos
-        </Button>
-      </div>
-    )
-  }
-  return (
-    <div className="flex flex-wrap items-center justify-center gap-3">
-      <Button size="lg" nativeButton={false} render={<Link href="/login?mode=signup" />}>
-        Registrarse
-      </Button>
-      <Button
-        size="lg"
-        variant="ghost"
-        nativeButton={false}
-        render={<Link href="/login" />}
-      >
-        Acceder
-      </Button>
-    </div>
-  )
-}
 
 const FEATURES = [
   {
@@ -45,7 +16,7 @@ const FEATURES = [
     icon: BarChart3Icon,
     title: 'Estadísticas',
     description: 'Récord, títulos y rivales.',
-    soon: true,
+    soon: false,
   },
   {
     icon: Share2Icon,
@@ -89,7 +60,7 @@ export default async function Home() {
             </Link>
           </span>
         </p>
-        <Actions loggedInHref={loggedInHref} />
+        <CtaActions loggedInHref={loggedInHref} />
       </section>
 
       {/* Preview de la app */}
@@ -117,7 +88,7 @@ export default async function Home() {
 
       {/* Cierre */}
       <section className="flex flex-col items-center gap-4">
-        <Actions loggedInHref={loggedInHref} />
+        <CtaActions loggedInHref={loggedInHref} />
       </section>
     </main>
   )

@@ -79,7 +79,7 @@ Plan por fases secuenciales de la feature. PRP completo en [`tenis-tracker-prp.m
 
 ## Fase 1.5 — Perfil público con slug
 
-- **Estado:** pendiente
+- **Estado:** hecha
 - **Objetivo:** cada jugador tiene una URL propia (`/[slug]`, ej. `/raphael-carvalho`) que reemplaza a `/app` como su espacio. El perfil es público por defecto (compartible) o privado, a elección del dueño. El log deja de vivir en una ruta fija y pasa a colgar del slug.
 
 **Decisión técnica de base (cerrada)**
@@ -117,7 +117,7 @@ Plan por fases secuenciales de la feature. PRP completo en [`tenis-tracker-prp.m
 
 ## Fase 2 — Estadísticas
 
-- **Estado:** pendiente
+- **Estado:** hecha
 - **Objetivo:** dashboard derivado del log que muestre el progreso de la carrera.
 
 **Alcance**

@@ -5,6 +5,7 @@ import { getViewerChrome } from '@/services/user-service'
 import { ProfileHeader } from '@/components/profile/profile-header'
 import { ProfileNav } from '@/components/profile/profile-nav'
 import { PrivateProfile } from '@/components/profile/private-profile'
+import { CtaActions } from '@/components/landing/cta-actions'
 import { Timeline } from './timeline'
 import { TimelineSkeleton } from './timeline-skeleton'
 
@@ -25,11 +26,16 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
 
   const isPrivate = owner.visibility === 'PRIVATE' && !isOwner
 
+  // CTA del pie: anónimo → registrarse/acceder; logueado → su perfil (u onboarding si no tiene slug).
+  const loggedInHref = viewerChrome ? (viewerChrome.slug ? `/${viewerChrome.slug}` : '/onboarding') : null
+
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-10">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-10">
       <ProfileHeader
         ownerName={owner.name ?? owner.slug ?? ''}
         ownerSlug={slug}
+        ownerImage={owner.image}
+        isOwner={isOwner}
         viewer={viewerChrome}
       />
 
@@ -43,6 +49,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
           </Suspense>
         </>
       )}
+
+      <footer className="mt-16 border-t pt-8">
+        <CtaActions loggedInHref={loggedInHref} />
+      </footer>
     </main>
   )
 }

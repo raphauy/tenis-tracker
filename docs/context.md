@@ -100,3 +100,31 @@ Paso obligatorio tras el primer login: el usuario elige **nombre** (campo libre)
 **Ajustes**:
 Página `/[slug]/ajustes` donde el dueño edita su **nombre** y **foto** (avatar) y cambia la **Visibilidad**. El **Slug** se muestra read-only (fijo).
 _Evitar_: llamarla "perfil".
+
+### Estadísticas
+
+Siguen las convenciones estándar del tenis (ATP / Tennis Abstract). Todas se derivan del log propio; viven en el **Perfil** (`/[slug]/stats`).
+
+**Récord W/L**:
+Victorias–derrotas en **partidos jugados**: solo `normal` y `retiro` (el partido empezó). El **walkover** NO cuenta (ni W ni L: el partido no se jugó); el **bye** y los `scheduled` son invisibles. Un torneo **En curso** aporta sus partidos ya jugados al récord, aunque no sume a los logros.
+_Evitar_: contar el walkover o el bye como partido.
+
+**Win%**:
+`W / (W + L)` sobre el mismo universo del **Récord W/L** (walkover y bye nunca en el denominador).
+
+**Walkovers (W.O.)**:
+Avances sin jugar. Fuera del récord, pero se muestran como nota informativa aparte (ej. "+2 W.O.") para explicar un recorrido con pocos partidos jugados.
+
+**Logros**:
+Conteos **acumulativos** ("llegó a", convención ATP): **Títulos** (ganó la final) ≤ **Finales** (llegó a la final, incl. las ganadas) ≤ **Semis** (llegó a semifinal o más). Cada uno incluye al de arriba. Solo torneos con resultado cerrado (no En curso).
+_Evitar_: mezclar acumulativo con el desglose excluyente del **Resultado del torneo** (Campeón/Finalista/Semifinalista/Eliminado son baldes mutuamente excluyentes; los Logros NO).
+
+**Mejor resultado** (por año/categoría):
+El **Resultado del torneo** más alto del grupo. Orden: Campeón > Finalista > Semifinalista > Eliminado en {ronda, más alta primero} > En curso.
+
+**Head-to-Head (H2H)**:
+Récord W/L contra un **rival** recurrente (2+ partidos jugados) dentro del log propio. Mismo criterio que el Récord W/L (walkover fuera). Se ordena por cantidad de enfrentamientos (desc). Limitación: el rival es solo un nombre; dos homónimos se fusionan.
+_Evitar_: H2H entre usuarios (post-MVP) — esto es solo contra Jugadores del catálogo.
+
+**Año** (de una stat):
+Sale de `tournament.startDate`; si es null, cae al `createdAt` de la Participación (mismo fallback que ordena la timeline).

@@ -12,6 +12,17 @@ export const ROUND_LABELS: Record<Round, string> = {
   FINAL: 'Final',
 }
 
+// Etiquetas compactas para listas angostas (móvil): liberan ancho para el nombre del rival.
+export const ROUND_LABELS_SHORT: Record<Round, string> = {
+  CLASIFICACION: 'Clasif.',
+  R32: '32avos',
+  R16: '16avos',
+  OCTAVOS: '8vos',
+  CUARTOS: '4tos',
+  SEMIFINAL: 'Semi',
+  FINAL: 'Final',
+}
+
 export const MATCH_TYPE_LABELS: Record<MatchType, string> = {
   NORMAL: 'Normal',
   WALKOVER: 'Walkover (W.O.)',
@@ -29,6 +40,23 @@ export function entryResultLabel(result: EntryResult): string {
       return 'Semifinalista'
     case 'ELIMINADO':
       return `Eliminado en ${ROUND_LABELS[result.round]}`
+    case 'EN_CURSO':
+      return 'En curso'
+  }
+}
+
+// Etiqueta compacta para columnas/badges angostos (ej. "Mejor resultado" en stats):
+// para ELIMINADO muestra solo la ronda alcanzada en vez de "Eliminado en …".
+export function entryResultLabelShort(result: EntryResult): string {
+  switch (result.kind) {
+    case 'CAMPEON':
+      return 'Campeón'
+    case 'FINALISTA':
+      return 'Finalista'
+    case 'SEMIFINALISTA':
+      return 'Semifinal'
+    case 'ELIMINADO':
+      return ROUND_LABELS[result.round]
     case 'EN_CURSO':
       return 'En curso'
   }
