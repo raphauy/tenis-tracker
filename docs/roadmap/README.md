@@ -9,3 +9,4 @@ El plan ejecutable de cada feature vive en `docs/PRPs/<feature>-prp.md` + `docs/
 ## Features
 
 - **tenis-tracker** (MVP) — `docs/PRPs/tenis-tracker-prp.md` · `docs/PRPs/tenis-tracker-roadmap.md`
+- **whatsapp-kapso** (auth por WhatsApp + integración Kapso; piloto pre-OnMind) — `docs/PRPs/whatsapp-kapso-prp.md` · `docs/PRPs/whatsapp-kapso-roadmap.md`

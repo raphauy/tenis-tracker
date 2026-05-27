@@ -133,3 +133,29 @@ _Evitar_: H2H entre usuarios (post-MVP) — esto es solo contra Jugadores del ca
 
 **Año** (de una stat):
 Sale de `tournament.startDate`; si es null, cae al `createdAt` de la Participación (mismo fallback que ordena la timeline).
+
+### WhatsApp y mensajería
+
+Términos de la feature **whatsapp-kapso** (integración vía Kapso, capa oficial sobre la Cloud API de Meta). Detalle de diseño en `docs/PRPs/whatsapp-kapso-{prp,roadmap}.md`.
+
+**Número del proyecto**:
+El número de WhatsApp de Tenis Tracker, conectado a través de **Kapso**. En el piloto es un **pre-verified US** (productivo, requiere depósito). Para dev se puede usar el número **sandbox** de Kapso.
+_Código_: se referencia por el `phoneNumberId` de Kapso (env `KAPSO_PHONE_NUMBER_ID`); las credenciales en `KAPSO_API_KEY`.
+_Evitar_: hablar de "instancia" (eso era Evolution); acá es un número conectado vía BSP oficial.
+
+**Ventana de 24 h**:
+Período de Meta que se abre cuando **el contacto nos escribe** (se reinicia con cada inbound suyo). Dentro: texto libre, gratis. Fuera: solo **templates pre-aprobados** (con costo). Aplica a todo proveedor oficial, Kapso incluido — no se puede saltear. Se evalúa mirando el `last_inbound_at` del contacto (< 24 h = abierta).
+_Evitar_: asumir que podemos iniciar conversación en frío con texto libre.
+
+**Conversación**:
+Hilo entre el **Número del proyecto** y un contacto (un teléfono, sea o no un usuario registrado). **No se persiste en nuestra DB**: vive en Kapso y se lee por su API (`conversations.list` / `messages.query`). Cardinalidad: una por teléfono contra el número del proyecto.
+_Código_: entidad de Kapso, **no** un modelo Prisma. Su estado `active`/`ended` y `last_inbound_at` salen de Kapso.
+_Evitar_: modelarla como tabla propia (se descartó en Fase 1; si OnMind la necesita, será su decisión).
+
+**Mensaje**:
+Cada texto entrante (`inbound`) o saliente (`outbound`) de una **Conversación**. En el MVP de la feature, **solo texto**. Tampoco se persiste: se lee de Kapso.
+_Código_: entidad de Kapso (no modelo Prisma).
+
+**Inbox**:
+Vista del superadmin en `/admin/whatsapp` que lista las **Conversaciones** (leídas de Kapso, ordenadas por última actividad), muestra el hilo y permite **responder texto solo dentro de la Ventana de 24 h**. No inicia conversaciones en frío (eso exige template, fuera de alcance del piloto).
+_Evitar_: llamarlo "bandeja de curado" (esa es la cola del catálogo, otra cosa).
