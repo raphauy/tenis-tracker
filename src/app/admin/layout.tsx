@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { getViewerChrome } from '@/services/user-service'
 import { UserAvatar } from '@/components/user-avatar'
+import { AdminNav } from '@/components/admin/admin-nav'
 
 // El acceso (solo SUPERADMIN) ya lo garantiza src/proxy.ts.
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -26,6 +27,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           )}
         </div>
       </header>
+      <AdminNav />
       {children}
     </div>
   )
