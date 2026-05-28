@@ -11,6 +11,12 @@ export const completeOnboardingSchema = z.object({
     .max(SLUG_MAX, `Máximo ${SLUG_MAX} caracteres`)
     .regex(SLUG_REGEX, 'Solo letras, números y guiones')
     .refine((s) => !RESERVED_SLUGS.has(s), 'Ese link está reservado'),
+  // Email opcional: rol de backup verificado para login si WhatsApp falla.
+  // No se verifica acá; el banner persistente se encarga del verify diferido.
+  email: z
+    .union([z.literal(''), z.string().trim().toLowerCase().email('Email inválido')])
+    .optional()
+    .transform((v) => (v ? v : null)),
 })
 
 export type CompleteOnboardingInput = z.infer<typeof completeOnboardingSchema>

@@ -5,6 +5,7 @@ import { countPendingCategories } from '@/services/category-service'
 import { countPendingTournaments } from '@/services/tournament-service'
 import { getSuperadminEmails } from '@/services/user-service'
 import { sendCurationDigestEmail } from '@/services/email-service'
+import { cleanupExpiredPendingAuths } from '@/services/pending-auth-service'
 
 // Cron diario (vercel.json). Notifica al superadmin si hay entradas de catálogo
 // pendientes de curar. Vercel inyecta `Authorization: Bearer ${CRON_SECRET}`.
@@ -21,6 +22,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
+  // Higiene del flujo Magic-link inverso: purgar PendingAuth con expiresAt < now-24h.
+  // No bloquea ni cambia el resto del cron; solo logueamos cuántos se borraron.
+  const purgedPendingAuths = await cleanupExpiredPendingAuths()
+
   const [venues, categories, tournaments] = await Promise.all([
     countPendingVenues(),
     countPendingCategories(),
@@ -30,12 +35,17 @@ export async function GET(request: NextRequest) {
 
   // Nada que curar: no se manda email.
   if (total === 0) {
-    return NextResponse.json({ sent: false, total: 0 })
+    return NextResponse.json({ sent: false, total: 0, purgedPendingAuths })
   }
 
   const to = await getSuperadminEmails()
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tenis-tracker.app'
   await sendCurationDigestEmail({ to, venues, categories, tournaments, adminUrl: `${baseUrl}/admin` })
 
-  return NextResponse.json({ sent: to.length > 0, total, recipients: to.length })
+  return NextResponse.json({
+    sent: to.length > 0,
+    total,
+    recipients: to.length,
+    purgedPendingAuths,
+  })
 }

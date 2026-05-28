@@ -157,5 +157,32 @@ Cada texto entrante (`inbound`) o saliente (`outbound`) de una **Conversación**
 _Código_: entidad de Kapso (no modelo Prisma).
 
 **Inbox**:
-Vista del superadmin en `/admin/whatsapp` que lista las **Conversaciones** (leídas de Kapso, ordenadas por última actividad), muestra el hilo y permite **responder texto solo dentro de la Ventana de 24 h**. No inicia conversaciones en frío (eso exige template, fuera de alcance del piloto).
+Vista del superadmin en `/admin/whatsapp` que lista las **Conversaciones** (leídas de Kapso, ordenadas por última actividad), muestra el hilo y permite **responder texto solo dentro de la Ventana de 24 h**. No inicia conversaciones en frío (eso exige template, fuera de alcance del piloto). Filtra del hilo y del listado los mensajes que matchean el patrón de **Código de sesión** (ruido de auth).
 _Evitar_: llamarlo "bandeja de curado" (esa es la cola del catálogo, otra cosa).
+
+### Auth por WhatsApp
+
+Términos de la **Fase 2** de la feature whatsapp-kapso. Modelo conceptual: el "OTP" viaja **web → usuario → server** (no al revés), usando el inbound del usuario como prueba de posesión del canal.
+
+**Código de sesión**:
+Token corto (6 chars del charset `[A-HJ-NP-Z2-9]`, sin `0/O/1/I/L` por confundibles) que la web genera al iniciar un login por WhatsApp y embebe en el texto prefijado del `wa.me` (formato canónico: `Tenis Tracker login: K7M3B9`). El usuario lo envía; el webhook lo extrae y lo matchea con la sesión web que lo originó. **TTL ~10 min**, single-use, idempotente.
+_Código_: `PendingAuth.code` (tabla nueva, separada de `OtpToken`).
+_Evitar_: llamarlo "OTP" sin matiz — el OTP tradicional viaja en sentido inverso (server → usuario); acá es al revés.
+
+**Magic-link inverso**:
+Patrón de auth de la app: la web genera un **Código de sesión**, el usuario lo manda por WhatsApp (vía el botón `wa.me`), el webhook lo resuelve y la pestaña detecta el match por **polling** de `PendingAuth.consumedAt`. Es el canal **primario** de login y registro. Cero saliente nuestro en éxito (la web ya muestra la sesión activa).
+_Evitar_: confundir con "magic-link por email" (link clickeable que autentica al cargar la URL) — acá el "link" es un mensaje saliente del usuario.
+
+**Email backup**:
+Email opcional del usuario que, **si está verificado** (`User.emailVerifiedAt != null`), funciona como segunda puerta de login cuando WhatsApp no está disponible. Se pide en el **Onboarding** (opcional) y el flujo de verificación es un **OTP por email** (reusa la maquinaria existente con Resend). Sin email verificado, no hay backup posible.
+_Código_: `User.email` (nullable) + `User.emailVerifiedAt`.
+_Evitar_: tratarlo como dato de contacto sin más — su rol es ser puerta de auth de emergencia.
+
+**Banner de email**:
+Componente sticky entre header y contenido en toda vista autenticada del **dueño** (`/[slug]/*` con viewer == owner, `/admin/*`). Aparece mientras el usuario no tenga **Email backup** verificado. Dos copys según el estado: "Agregá un email…" (si `email == null`) o "Verificá tu email…" (si `email != null && emailVerifiedAt == null`). Click → dialog inline con input email u OTP, sin sacar al usuario del contexto. **No tiene X ni se snoozea**: persiste hasta cumplirse.
+
+**Verificación de teléfono**:
+Implícita en el flujo de **Magic-link inverso**: el primer inbound exitoso del usuario marca `User.phoneVerifiedAt`. No hay otra forma de verificar el phone (no se acepta phone tipeado a mano).
+
+**Verificación de email**:
+Diferida y opcional. Se hace por **OTP por email** (vía el `OtpToken` existente, sin canal alternativo) desde el dialog del **Banner de email** o desde Ajustes. Al completarse marca `User.emailVerifiedAt`.

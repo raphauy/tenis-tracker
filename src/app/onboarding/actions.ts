@@ -5,7 +5,7 @@ import type { ActionResult } from '@/lib/types'
 import { requireUser } from '@/lib/auth-helpers'
 import { completeOnboardingSchema } from '@/lib/validations/onboarding'
 import { validateSlugFormat } from '@/lib/slug'
-import { isSlugTaken, setUserSlugAndName } from '@/services/user-service'
+import { getUserByEmail, isSlugTaken, setUserEmail, setUserSlugAndName } from '@/services/user-service'
 
 export type SlugStatus = 'available' | 'taken' | 'reserved' | 'invalid'
 
@@ -29,6 +29,7 @@ export async function checkSlugAvailability(raw: string): Promise<ActionResult<{
 export async function completeOnboarding(input: {
   name: string
   slug: string
+  email?: string | null
 }): Promise<ActionResult<{ slug: string }>> {
   const parsed = completeOnboardingSchema.safeParse(input)
   if (!parsed.success) {
@@ -36,11 +37,21 @@ export async function completeOnboarding(input: {
   }
   try {
     const user = await requireUser()
-    const { name, slug } = parsed.data
+    const { name, slug, email } = parsed.data
     if (await isSlugTaken(slug)) {
       return { success: false, error: 'Ese link ya fue tomado, probá otro' }
     }
+    // Si vino email: lo guardamos sin verificar (banner persistente fuerza el verify después).
+    // Si otro user ya lo usa, devolvemos error explícito; el slug igual no se setea (ambas
+    // ops en orden: chequeo de email → setUserSlugAndName → setUserEmail).
+    if (email) {
+      const conflict = await getUserByEmail(email)
+      if (conflict && conflict.id !== user.id) {
+        return { success: false, error: 'Ese email ya está usado por otra cuenta' }
+      }
+    }
     await setUserSlugAndName(user.id, name, slug)
+    if (email) await setUserEmail(user.id, email)
     return { success: true, data: { slug } }
   } catch (error) {
     // Race del live-check: dos requests con el mismo slug → unique violation.

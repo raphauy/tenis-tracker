@@ -35,6 +35,7 @@ export function OnboardingForm({ initialName, appHost }: { initialName: string; 
   const [slugTouched, setSlugTouched] = React.useState(false)
   const [status, setStatus] = React.useState<Status>('idle')
   const [submitting, setSubmitting] = React.useState(false)
+  const [email, setEmail] = React.useState('')
 
   const latestSlug = React.useRef(slug)
   React.useEffect(() => {
@@ -68,7 +69,11 @@ export function OnboardingForm({ initialName, appHost }: { initialName: string; 
     e.preventDefault()
     if (!canSubmit) return
     setSubmitting(true)
-    const res = await completeOnboarding({ name: name.trim(), slug })
+    const res = await completeOnboarding({
+      name: name.trim(),
+      slug,
+      email: email.trim() || null,
+    })
     setSubmitting(false)
     if (!res.success) {
       toast.error(res.error)
@@ -139,6 +144,25 @@ export function OnboardingForm({ initialName, appHost }: { initialName: string; 
                 {MESSAGES[status]}
               </p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">
+              Email <span className="text-muted-foreground font-normal">(opcional)</span>
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="tu@email.com"
+              maxLength={120}
+              disabled={submitting}
+              autoComplete="email"
+            />
+            <p className="text-muted-foreground text-xs">
+              Respaldo para entrar si no podés usar WhatsApp. Podés agregarlo después.
+            </p>
           </div>
 
           <Button type="submit" className="w-full" disabled={!canSubmit}>

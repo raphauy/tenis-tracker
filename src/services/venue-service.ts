@@ -3,11 +3,13 @@ import type { CreateVenueInput } from '@/lib/validations/venue'
 import type { CurrentUser } from '@/lib/auth-helpers'
 
 // Entrada de catálogo curado para la cola del panel admin.
+// `createdBy.email` puede ser null desde Fase 2 (usuarios que entraron por WhatsApp
+// y todavía no agregaron email).
 export type CatalogPending = {
   id: string
   name: string
   createdAt: Date
-  createdBy: { name: string | null; email: string }
+  createdBy: { name: string | null; email: string | null }
   refCount: number
 }
 

@@ -5,6 +5,11 @@ export async function getUserByEmail(email: string) {
   return prisma.user.findUnique({ where: { email } })
 }
 
+// Identidad primaria desde Fase 2 (Magic-link inverso por WhatsApp).
+export async function getUserByPhone(phone: string) {
+  return prisma.user.findUnique({ where: { phone } })
+}
+
 export async function getUserById(id: string) {
   return prisma.user.findUnique({ where: { id } })
 }
@@ -59,12 +64,13 @@ export async function updateUserProfile(
 }
 
 // Emails de los superadmin activos: destinatarios de la notificación de curado.
+// Desde Fase 2 el email es opcional; filtramos los que no lo tienen seteado.
 export async function getSuperadminEmails(): Promise<string[]> {
   const admins = await prisma.user.findMany({
-    where: { role: 'SUPERADMIN', isActive: true },
+    where: { role: 'SUPERADMIN', isActive: true, email: { not: null } },
     select: { email: true },
   })
-  return admins.map((a) => a.email)
+  return admins.flatMap((a) => (a.email ? [a.email] : []))
 }
 
 // Perfiles públicos activos con slug, para el sitemap.
@@ -76,11 +82,43 @@ export async function getPublicProfilesForSitemap() {
   })
 }
 
-// Self-signup: crea el usuario (role USER) si no existe. Idempotente por email.
-export async function upsertUserByEmail(email: string) {
+// Self-signup por WhatsApp (Fase 2): identidad primaria = phone. Si el phone no existía,
+// se crea User(phone, phoneVerifiedAt=now). Idempotente por phone.
+// Sin email: el usuario lo agrega después en el onboarding/banner (opcional).
+export async function upsertUserByPhone(phone: string) {
+  const now = new Date()
   return prisma.user.upsert({
-    where: { email },
-    update: {},
-    create: { email },
+    where: { phone },
+    update: {}, // si ya existe, no toca nada (login normal)
+    create: { phone, phoneVerifiedAt: now },
+  })
+}
+
+// Setea/actualiza el email del usuario sin verificarlo (verify diferido vía banner).
+// Permite también poner null para limpiarlo.
+// Si el email no cambia, no toca emailVerifiedAt (evita invalidar verificaciones previas
+// cuando el caller llama defensivamente con el mismo valor).
+export async function setUserEmail(id: string, email: string | null) {
+  const current = await prisma.user.findUnique({ where: { id }, select: { email: true } })
+  if (current && current.email === email) return current
+  return prisma.user.update({
+    where: { id },
+    data: { email, emailVerifiedAt: null },
+  })
+}
+
+// Marca el email como verificado tras OTP exitoso por Resend.
+export async function setEmailVerified(id: string) {
+  return prisma.user.update({
+    where: { id },
+    data: { emailVerifiedAt: new Date() },
+  })
+}
+
+// Estado del email del owner para decidir si mostrar el banner persistente.
+export async function getEmailStatus(id: string) {
+  return prisma.user.findUnique({
+    where: { id },
+    select: { email: true, emailVerifiedAt: true },
   })
 }

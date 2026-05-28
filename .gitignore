@@ -43,3 +43,6 @@ next-env.d.ts
 # logs locales
 dev.log
 *.log
+
+# scratch local
+borrar.txt

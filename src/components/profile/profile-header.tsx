@@ -5,7 +5,8 @@ import { OwnerAvatar } from '@/components/profile/owner-avatar'
 
 type Viewer = {
   name: string | null
-  email: string
+  // Desde Fase 2, email es opcional (los logins por WhatsApp pueden no tener email todavía).
+  email: string | null
   slug: string | null
   image: string | null
   role: string

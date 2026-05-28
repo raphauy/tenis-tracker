@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import {
   SUPERADMIN_EMAIL,
   SUPERADMIN_NAME,
+  SUPERADMIN_PHONE,
   SEED_VENUES,
   SEED_CATEGORIES,
 } from '../src/lib/constants/catalog'
@@ -10,15 +11,25 @@ const prisma = new PrismaClient()
 
 async function main() {
   console.log('🌱 Seeding database...')
+  const now = new Date()
 
-  // 1. Superadmin (el dueño).
+  // 1. Superadmin (el dueño). Phone + ambas verificaciones cubiertas desde el día 1
+  //    (su login va por WhatsApp pero el email backup queda operativo).
   const superadmin = await prisma.user.upsert({
     where: { email: SUPERADMIN_EMAIL },
-    update: { role: 'SUPERADMIN' },
+    update: {
+      role: 'SUPERADMIN',
+      phone: SUPERADMIN_PHONE,
+      phoneVerifiedAt: now,
+      emailVerifiedAt: now,
+    },
     create: {
       email: SUPERADMIN_EMAIL,
       name: SUPERADMIN_NAME,
       role: 'SUPERADMIN',
+      phone: SUPERADMIN_PHONE,
+      phoneVerifiedAt: now,
+      emailVerifiedAt: now,
     },
   })
   console.log(`✅ Superadmin: ${superadmin.email}`)

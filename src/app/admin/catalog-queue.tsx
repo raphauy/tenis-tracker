@@ -69,7 +69,7 @@ export function CatalogQueue(props: Props) {
             <p className="truncate font-medium">{item.name}</p>
             <p className="truncate text-xs text-muted-foreground">
               {kind === 'tournament' && `${(item as TournamentPending).venueName} · `}
-              {item.createdBy.name ?? item.createdBy.email} · {fmtDate(item.createdAt)}
+              {item.createdBy.name ?? item.createdBy.email ?? 'Anónimo'} · {fmtDate(item.createdAt)}
               {item.refCount > 0 && (
                 <>
                   {' · '}

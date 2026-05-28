@@ -32,14 +32,15 @@ import {
 
 type Props = {
   name: string | null
-  email: string
+  // Desde Fase 2: email es opcional (puede no haberlo agregado todavía en el onboarding).
+  email: string | null
   image: string | null
   slug: string | null
   role: string
 }
 
-function initials(name: string | null, email: string): string {
-  const base = name?.trim() || email
+function initials(name: string | null, email: string | null): string {
+  const base = name?.trim() || email || '?'
   return base
     .split(/\s+/)
     .map((w) => w[0] ?? '')
@@ -59,7 +60,7 @@ export function UserAvatar({ name, email, image, slug, role }: Props) {
     <DropdownMenu>
       <DropdownMenuTrigger className="cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <Avatar size="lg">
-          <AvatarImage src={image ?? undefined} alt={name ?? email} />
+          <AvatarImage src={image ?? undefined} alt={name ?? email ?? ''} />
           <AvatarFallback>{initials(name, email)}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -72,7 +73,9 @@ export function UserAvatar({ name, email, image, slug, role }: Props) {
                 <span className="truncate text-sm font-medium text-foreground">
                   {name ?? 'Sin nombre'}
                 </span>
-                <span className="truncate text-xs text-muted-foreground">{email}</span>
+                {email && (
+                  <span className="truncate text-xs text-muted-foreground">{email}</span>
+                )}
               </div>
               <RoleBadge role={role} className="shrink-0" />
             </div>

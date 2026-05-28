@@ -61,19 +61,26 @@ enum MatchSide {
 // ---------- Usuarios / auth ----------
 
 model User {
-  id         String     @id @default(cuid())
-  email      String     @unique
-  name       String?
-  slug       String?    @unique // URL pública del jugador; se elige en el onboarding y queda fija
-  visibility Visibility @default(PUBLIC)
-  image      String?    // URL del avatar (Vercel Blob)
-  role       UserRole   @default(USER)
-  isActive   Boolean    @default(true)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id              String     @id @default(cuid())
+  // Phone es la identidad primaria de auth (Magic-link inverso por WhatsApp, Fase 2).
+  // Se setea al primer inbound exitoso o por seed; verifiedAt va junto.
+  phone           String     @unique
+  phoneVerifiedAt DateTime?
+  // Email es opcional, rol de backup verificado para login cuando WhatsApp falla.
+  email           String?    @unique
+  emailVerifiedAt DateTime?
+  name            String?
+  slug            String?    @unique // URL pública del jugador; se elige en el onboarding y queda fija
+  visibility      Visibility @default(PUBLIC)
+  image           String?    // URL del avatar (Vercel Blob)
+  role            UserRole   @default(USER)
+  isActive        Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
-  entries   Entry[]
-  otpTokens OtpToken[]
+  entries      Entry[]
+  otpTokens    OtpToken[]
+  pendingAuths PendingAuth[] @relation("UserPendingAuths")
 
   createdVenues      Venue[]      @relation("VenueCreatedBy")
   createdCategories  Category[]   @relation("CategoryCreatedBy")
@@ -95,6 +102,25 @@ model OtpToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// Código de sesión del Magic-link inverso por WhatsApp (Fase 2, ADR 0002).
+// La web crea una row con `code` y lo embebe en el texto del wa.me; el inbound
+// del usuario llega al webhook, matchea por code y setea consumedAt + resolvedPhone/UserId.
+// La pestaña detecta el match por polling de este registro.
+model PendingAuth {
+  id             String    @id @default(cuid())
+  code           String    @unique // 6 chars del charset [A-HJ-NP-Z2-9]
+  expiresAt      DateTime           // ~10 min desde createdAt
+  consumedAt     DateTime?          // set al primer match exitoso del webhook
+  rejectedReason String?            // 'CODE_EXPIRED' | 'CODE_INVALID' | 'CODE_CONSUMED'
+  resolvedPhone  String?            // E.164 del inbound matcheado (auditoría)
+  resolvedUserId String?            // user logueado/creado tras match exitoso
+  createdAt      DateTime  @default(now())
+
+  resolvedUser User? @relation("UserPendingAuths", fields: [resolvedUserId], references: [id], onDelete: SetNull)
+
+  @@index([expiresAt])
 }
 
 // ---------- Catálogo compartido ----------

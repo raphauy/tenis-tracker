@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { toast } from 'sonner'
@@ -21,22 +22,141 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from '@/components/ui/input-otp'
-import { requestOtpAction } from './actions'
+import { requestOtpAction, requestWaLoginAction } from './actions'
+import type { WaAuthStatus } from '@/app/api/auth/wa/status/route'
 
-type Step = 'email' | 'otp'
+// Estados del form:
+//   - 'idle'         → botón WA + link a email backup
+//   - 'wa-waiting'   → tras click WA, polling al endpoint hasta consumed/rejected/timeout
+//   - 'email-input'  → input email (backup) → genera OTP por Resend
+//   - 'email-otp'    → tipear OTP de email
+type Step = 'idle' | 'wa-waiting' | 'email-input' | 'email-otp'
+
+// Backoff del polling: agresivo al inicio (el usuario está atento), suaviza después.
+function pollIntervalMs(elapsedMs: number): number {
+  if (elapsedMs < 30_000) return 1000
+  if (elapsedMs < 60_000) return 3000
+  return 5000
+}
+
+const POLL_TIMEOUT_MS = 10 * 60 * 1000
 
 export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl')
-  // El backend hace upsert: registrarse e iniciar sesión son el mismo flujo. El
-  // `mode` solo cambia el copy, según el botón de la landing que trajo al usuario.
-  const isSignup = searchParams.get('mode') === 'signup'
 
-  const [step, setStep] = useState<Step>('email')
+  const [step, setStep] = useState<Step>('idle')
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  // Code del PendingAuth abierto (solo durante 'wa-waiting').
+  const [waCode, setWaCode] = useState<string | null>(null)
+  const [waStartedAt, setWaStartedAt] = useState<number | null>(null)
+  // Ref para cancelar el ciclo de polling si el usuario vuelve al idle.
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cancelledRef = useRef(false)
+
+  // --- Polling del estado del PendingAuth -----------------------------------
+
+  const stopPolling = useCallback(() => {
+    cancelledRef.current = true
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current)
+      pollTimerRef.current = null
+    }
+  }, [])
+
+  const finishWithSignIn = useCallback(
+    async (code: string) => {
+      const res = await signIn('whatsapp', { code, redirect: false })
+      if (res?.error) {
+        toast.error('No pudimos completar el login. Probá de nuevo.')
+        setStep('idle')
+        setWaCode(null)
+        setWaStartedAt(null)
+        return
+      }
+      router.push(callbackUrl || getPostLoginUrl())
+      router.refresh()
+    },
+    [callbackUrl, router],
+  )
+
+  useEffect(() => {
+    if (step !== 'wa-waiting' || !waCode || !waStartedAt) return
+    cancelledRef.current = false
+
+    async function tick() {
+      if (cancelledRef.current) return
+      const elapsed = Date.now() - waStartedAt!
+      if (elapsed > POLL_TIMEOUT_MS) {
+        toast.error('El código expiró. Probá de nuevo.')
+        setStep('idle')
+        setWaCode(null)
+        setWaStartedAt(null)
+        return
+      }
+      try {
+        const res = await fetch(`/api/auth/wa/status?code=${encodeURIComponent(waCode!)}`, {
+          cache: 'no-store',
+        })
+        const data: WaAuthStatus = await res.json()
+        if (cancelledRef.current) return
+        if (data.status === 'consumed') {
+          await finishWithSignIn(waCode!)
+          return
+        }
+        if (data.status === 'rejected') {
+          const msg =
+            data.reason === 'CODE_EXPIRED'
+              ? 'El código expiró. Probá de nuevo.'
+              : 'No pudimos verificar el código. Probá de nuevo.'
+          toast.error(msg)
+          setStep('idle')
+          setWaCode(null)
+          setWaStartedAt(null)
+          return
+        }
+      } catch {
+        // Errores de red transitorios: seguimos polleando hasta el timeout.
+      }
+      pollTimerRef.current = setTimeout(tick, pollIntervalMs(Date.now() - waStartedAt!))
+    }
+
+    pollTimerRef.current = setTimeout(tick, pollIntervalMs(0))
+    return () => stopPolling()
+  }, [step, waCode, waStartedAt, finishWithSignIn, stopPolling])
+
+  // --- Handlers --------------------------------------------------------------
+
+  async function handleStartWhatsApp() {
+    setIsLoading(true)
+    const result = await requestWaLoginAction()
+    setIsLoading(false)
+    if (!result.success) {
+      toast.error(result.error)
+      return
+    }
+    if (!result.data) {
+      toast.error('No pudimos iniciar el login.')
+      return
+    }
+    // Abrir WhatsApp en una pestaña nueva y pasar a la pantalla de espera.
+    window.open(result.data.waUrl, '_blank', 'noopener,noreferrer')
+    setWaCode(result.data.code)
+    setWaStartedAt(Date.now())
+    setStep('wa-waiting')
+  }
+
+  function handleBackToIdle() {
+    stopPolling()
+    setStep('idle')
+    setWaCode(null)
+    setWaStartedAt(null)
+    setEmail('')
+    setOtp('')
+  }
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -49,49 +169,96 @@ export function LoginForm() {
       return
     }
     setEmail(normalized)
-    setStep('otp')
+    setStep('email-otp')
     toast.success('Te enviamos un código a tu email.')
   }
 
-  async function handleOtpSubmit(e: React.FormEvent) {
+  async function handleEmailOtpSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (otp.length !== 6) return
     setIsLoading(true)
-    const result = await signIn('credentials', { email, otp, redirect: false })
+    const result = await signIn('email', { email, otp, redirect: false })
     setIsLoading(false)
     if (result?.error) {
       toast.error('Código inválido o vencido.')
       setOtp('')
       return
     }
-    // Destino: callbackUrl si vino del proxy, si no la raíz (el proxy redirige a /[slug] u /onboarding).
     router.push(callbackUrl || getPostLoginUrl())
     router.refresh()
   }
 
-  function handleBackToEmail() {
-    setStep('email')
-    setOtp('')
+  // --- Render ---------------------------------------------------------------
+
+  if (step === 'idle') {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-center text-2xl font-bold">Iniciá sesión</CardTitle>
+          <CardDescription className="text-center">
+            Usamos WhatsApp como puerta principal. Sin contraseña.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            className="w-full"
+            size="lg"
+            disabled={isLoading}
+            onClick={handleStartWhatsApp}
+          >
+            {isLoading ? 'Generando…' : 'Continuar con WhatsApp'}
+          </Button>
+          <div className="text-center">
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground cursor-pointer text-sm underline-offset-2 hover:underline"
+              onClick={() => setStep('email-input')}
+              disabled={isLoading}
+            >
+              No puedo usar WhatsApp ahora
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
-  return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-center text-2xl font-bold">
-          {step === 'email'
-            ? isSignup
-              ? 'Creá tu cuenta'
-              : 'Iniciá sesión'
-            : 'Verificar código'}
-        </CardTitle>
-        <CardDescription className="text-center">
-          {step === 'email'
-            ? 'Ingresá tu email para recibir un código de acceso'
-            : `Ingresá el código de 6 dígitos enviado a ${email}`}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {step === 'email' ? (
+  if (step === 'wa-waiting') {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-center text-2xl font-bold">Esperando tu mensaje</CardTitle>
+          <CardDescription className="text-center">
+            Abrimos WhatsApp en otra pestaña. Enviá el mensaje sin editarlo y volvemos a esta página solos.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-muted text-muted-foreground rounded-md px-3 py-2 text-center font-mono text-sm">
+            Código: {waCode}
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            onClick={handleBackToIdle}
+          >
+            Cancelar
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (step === 'email-input') {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-center text-2xl font-bold">Iniciar con email</CardTitle>
+          <CardDescription className="text-center">
+            Te enviamos un código de acceso. Solo funciona si verificaste tu email antes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <form onSubmit={handleEmailSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -110,46 +277,76 @@ export function LoginForm() {
             <Button type="submit" className="w-full" disabled={isLoading || !email}>
               {isLoading ? 'Enviando…' : 'Continuar'}
             </Button>
-          </form>
-        ) : (
-          <form onSubmit={handleOtpSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-center block">Código de verificación</Label>
-              <InputOTP
-                containerClassName="justify-center"
-                maxLength={6}
-                value={otp}
-                onChange={setOtp}
-                disabled={isLoading}
-                autoFocus
-              >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                </InputOTPGroup>
-                <InputOTPSeparator />
-                <InputOTPGroup>
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
-                </InputOTPGroup>
-              </InputOTP>
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading || otp.length !== 6}>
-              {isLoading ? 'Verificando…' : 'Verificar'}
-            </Button>
             <Button
               type="button"
               variant="ghost"
               className="w-full"
-              onClick={handleBackToEmail}
+              onClick={handleBackToIdle}
               disabled={isLoading}
             >
-              Volver al email
+              Volver
             </Button>
           </form>
-        )}
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // step === 'email-otp'
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-center text-2xl font-bold">Verificar código</CardTitle>
+        <CardDescription className="text-center">
+          Ingresá el código de 6 dígitos enviado a {email}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleEmailOtpSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label className="block text-center">Código de verificación</Label>
+            <InputOTP
+              containerClassName="justify-center"
+              maxLength={6}
+              value={otp}
+              onChange={setOtp}
+              disabled={isLoading}
+              autoFocus
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+              </InputOTPGroup>
+              <InputOTPSeparator />
+              <InputOTPGroup>
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+          <Button type="submit" className="w-full" disabled={isLoading || otp.length !== 6}>
+            {isLoading ? 'Verificando…' : 'Verificar'}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            onClick={() => {
+              setStep('email-input')
+              setOtp('')
+            }}
+            disabled={isLoading}
+          >
+            Volver al email
+          </Button>
+        </form>
+        <p className="text-muted-foreground mt-4 text-center text-xs">
+          <Link href="/" className="underline-offset-2 hover:underline">
+            Volver al inicio
+          </Link>
+        </p>
       </CardContent>
     </Card>
   )

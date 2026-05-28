@@ -1,5 +1,14 @@
 import { WhatsAppClient, buildKapsoFields } from '@kapso/whatsapp-cloud-api'
 import type { ConversationRecord, MetaMessage } from '@kapso/whatsapp-cloud-api'
+import {
+  AUTH_MESSAGE_REGEX,
+  AUTH_FALLBACK_REGEX,
+  WA_LOGIN_PREFIX,
+  WA_REJECTION_MESSAGE,
+  WA_REJECTION_RATE_LIMIT_COUNT,
+  WA_REJECTION_RATE_LIMIT_WINDOW_MIN,
+  WA_SUCCESS_MESSAGE,
+} from '@/lib/constants/auth'
 
 // Única capa que habla con Kapso (mismo principio que "solo services toca Prisma").
 // No persistimos nada: Kapso es la fuente de verdad de conversaciones/mensajes.
@@ -106,6 +115,20 @@ export function isWindowOpen(lastInboundAt: Date | null): boolean {
   return !!lastInboundAt && Date.now() - lastInboundAt.getTime() < WINDOW_MS
 }
 
+// Marca mensajes que pertenecen al flujo de auth (Magic-link inverso), para esconderlos
+// del inbox del admin. Ver docs/context.md § "Inbox" y ADR 0002.
+export function isAuthMessage(body: string | null | undefined): boolean {
+  if (!body) return false
+  // Lo más fuerte primero: prefijo + 6 chars del charset. Si está editado y el prefijo no
+  // aparece pero quedó el code suelto, también lo escondemos (consistente con el webhook).
+  const trimmed = body.trim()
+  if (trimmed.toLowerCase().startsWith(WA_LOGIN_PREFIX.toLowerCase())) return true
+  if (AUTH_MESSAGE_REGEX.test(trimmed)) return true
+  // Solo el code (sin prefijo) → escondemos solo si es exactamente eso (evita falsos positivos).
+  if (AUTH_FALLBACK_REGEX.test(trimmed) && /^[A-HJ-NP-Z2-9]{6}$/.test(trimmed)) return true
+  return false
+}
+
 function mapConversation(c: ConversationRecord): WhatsAppConversation {
   const lastInboundAt = parseDate(c.kapso?.lastInboundAt)
   return {
@@ -146,6 +169,8 @@ export async function listConversations(): Promise<WhatsAppConversation[]> {
 }
 
 // Mensajes de una conversación, en orden cronológico (más viejo primero).
+// Filtra los mensajes del flujo Magic-link inverso (auth-noise) para que el
+// inbox del admin sólo vea conversaciones humanas.
 export async function getThread(conversationId: string): Promise<WhatsAppMessage[]> {
   const res = await client().messages.listByConversation({
     phoneNumberId: phoneNumberId(),
@@ -155,6 +180,7 @@ export async function getThread(conversationId: string): Promise<WhatsAppMessage
   })
   return res.data
     .map(mapMessage)
+    .filter((m) => !isAuthMessage(m.body))
     .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
 }
 
@@ -176,6 +202,59 @@ export async function sendText(input: { to: string; body: string }): Promise<voi
   }
 
   await client().messages.sendText({ phoneNumberId: pid, to, body })
+}
+
+// Rate limit in-memory por phone para sendRejectionFeedback: evita spam si alguien
+// manda muchos codes malos en ráfaga. Por instancia (Fluid Compute puede tener varias);
+// suficiente para el piloto. Si hace falta global, mover a Redis o tabla DB.
+const rejectionTimestamps = new Map<string, number[]>()
+
+function canSendRejection(phone: string): boolean {
+  const windowMs = WA_REJECTION_RATE_LIMIT_WINDOW_MIN * 60 * 1000
+  const cutoff = Date.now() - windowMs
+  const recent = (rejectionTimestamps.get(phone) ?? []).filter((t) => t > cutoff)
+  if (recent.length >= WA_REJECTION_RATE_LIMIT_COUNT) {
+    rejectionTimestamps.set(phone, recent)
+    return false
+  }
+  recent.push(Date.now())
+  rejectionTimestamps.set(phone, recent)
+  return true
+}
+
+// Responde por WhatsApp al usuario tras un rechazo de auth (code inválido/expirado/etc).
+// Free-form gratis: la ventana está abierta porque el usuario acaba de mandar inbound.
+// No bloquea el flujo del webhook: capturamos el error y solo logueamos.
+export async function sendRejectionFeedback(phone: string): Promise<void> {
+  if (!canSendRejection(phone)) {
+    console.log(`[whatsapp] rejection feedback rate-limited for ${phone}`)
+    return
+  }
+  try {
+    await client().messages.sendText({
+      phoneNumberId: phoneNumberId(),
+      to: phone,
+      body: WA_REJECTION_MESSAGE,
+    })
+  } catch (err) {
+    // No queremos romper el webhook por un saliente fallido. Logueamos.
+    console.error('[whatsapp] sendRejectionFeedback failed:', err)
+  }
+}
+
+// Acknowledge tras un match exitoso: cierre visual en WhatsApp para que el usuario
+// sepa que tiene que volver a la pestaña web (donde el polling termina el login).
+// Free-form gratis (ventana abierta por el propio inbound). No bloquea el webhook.
+export async function sendSuccessFeedback(phone: string): Promise<void> {
+  try {
+    await client().messages.sendText({
+      phoneNumberId: phoneNumberId(),
+      to: phone,
+      body: WA_SUCCESS_MESSAGE,
+    })
+  } catch (err) {
+    console.error('[whatsapp] sendSuccessFeedback failed:', err)
+  }
 }
 
 // Estado + salud del número, combinando metadata y el health-check de plataforma.

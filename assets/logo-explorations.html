@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Tenis Tracker — isologo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  :root {
+    --primary: #8c1d27;
+    --primary-soft: #c44a55;
+    --cream: #f8f4ee;
+    --cream-card: #fefcf9;
+    --ink: #2a2a2a;
+    --ink-soft: #555;
+    --dark-bg: #1f1d1c;
+    --dark-card: #2a2725;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px; background: #16140f; color: #ddd;
+    font-family: "Poppins", system-ui, sans-serif;
+  }
+  h1 { font-weight: 600; letter-spacing: -0.02em; margin: 0 0 8px; }
+  h2.section {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: #888; margin: 40px 0 16px; font-weight: 500;
+  }
+  p.intro { color: #888; margin: 0 0 32px; max-width: 760px; }
+  .lockups {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+  }
+  .lockup {
+    background: var(--dark-card); border: 1px solid #3a3633; border-radius: 12px;
+    overflow: hidden;
+  }
+  .lockup header {
+    padding: 10px 16px; border-bottom: 1px solid #3a3633;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .lockup header h3 {
+    margin: 0; font-size: 13px; font-weight: 600; color: #ddd;
+  }
+  .lockup header .id {
+    font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #888;
+  }
+  .lockup .row { display: grid; grid-template-columns: 1fr 1fr; }
+  .lockup .cell {
+    aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center;
+    padding: 28px;
+  }
+  .cell.light { background: var(--cream); }
+  .cell.dark { background: var(--dark-bg); }
+  .cell svg.lockup-svg { max-width: 100%; max-height: 100%; }
+
+  .icon-sizes {
+    background: var(--cream); color: var(--primary);
+    padding: 24px 32px; border-radius: 12px;
+    display: flex; gap: 28px; align-items: flex-end; flex-wrap: wrap;
+  }
+  .icon-sizes .label {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #888;
+    min-width: 100px;
+  }
+  .icon-sizes .s { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .icon-sizes .s small {
+    font-size: 10px; color: #999; font-family: "IBM Plex Mono", monospace;
+  }
+  .icon-sizes .s svg { display: block; }
+  .icon-sizes .s16 svg { width: 16px; height: 16px; }
+  .icon-sizes .s20 svg { width: 20px; height: 20px; }
+  .icon-sizes .s24 svg { width: 24px; height: 24px; }
+  .icon-sizes .s32 svg { width: 32px; height: 32px; }
+  .icon-sizes .s48 svg { width: 48px; height: 48px; }
+  .icon-sizes .s64 svg { width: 64px; height: 64px; }
+  .icon-sizes .s128 svg { width: 128px; height: 128px; }
+  .icon-sizes .s180 svg { width: 180px; height: 180px; }
+
+  /* Mockups de uso real */
+  .mockups { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .mockup {
+    background: var(--cream-card); border: 1px solid #e0d8c8; border-radius: 12px;
+    overflow: hidden;
+  }
+  .mockup-header {
+    background: var(--cream); border-bottom: 1px solid #e0d8c8;
+    padding: 14px 20px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .mockup-header .menu {
+    display: flex; gap: 18px; font-size: 13px; color: var(--ink-soft);
+  }
+  .mockup-body { padding: 28px 20px; }
+  .mockup-body .placeholder {
+    background: #eee5d6; border-radius: 4px; height: 8px;
+    margin-bottom: 8px;
+  }
+  .mockup-body .placeholder.w70 { width: 70%; }
+  .mockup-body .placeholder.w50 { width: 50%; }
+
+  .splash {
+    background: var(--cream); padding: 60px 40px;
+    display: flex; flex-direction: column; align-items: center; gap: 24px;
+    border-radius: 12px; min-height: 280px;
+    justify-content: center;
+  }
+  .og {
+    background: var(--cream); aspect-ratio: 1200 / 630;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 12px;
+  }
+
+  .footer-note {
+    color: #777; font-size: 12px; margin-top: 32px;
+    font-family: "IBM Plex Mono", monospace; max-width: 720px; line-height: 1.6;
+  }
+</style>
+
+<!-- Reusable symbol: el icono que elegiste -->
+<svg width="0" height="0" style="position:absolute" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <symbol id="ball" viewBox="0 0 24 24">
+      <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+        <path d="M20.66 7c2.762 4.783 1.123 10.899-3.66 13.66S6.101 21.783 3.34 17S2.217 6.1 7 3.34S17.899 2.217 20.66 7"/>
+        <path d="M21.46 15.242c-4.986-3.302-7.582-7.8-7.538-13.056m-3.844 19.628C9.71 15.844 7.114 11.347 2.54 8.758"/>
+      </g>
+    </symbol>
+    <!--
+      Versión bold del icono para tamaños chicos (favicon 16/24).
+      stroke-width 2.5 en vez de 1.5 para que aguante mejor a tamaños tiny.
+    -->
+    <symbol id="ball-bold" viewBox="0 0 24 24">
+      <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5">
+        <path d="M20.66 7c2.762 4.783 1.123 10.899-3.66 13.66S6.101 21.783 3.34 17S2.217 6.1 7 3.34S17.899 2.217 20.66 7"/>
+        <path d="M21.46 15.242c-4.986-3.302-7.582-7.8-7.538-13.056m-3.844 19.628C9.71 15.844 7.114 11.347 2.54 8.758"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+</head>
+<body>
+
+<h1>Tenis Tracker · isologo</h1>
+<p class="intro">
+  5 lockups posibles con la pelota de Iconoir + Poppins, todo en los colores del theme.
+  Elegí uno (o decime ajustes) y paso a guardar los SVGs finales + reemplazar el favicon
+  + meter el Logo en el header.
+</p>
+
+<!-- ============================================================ -->
+<!-- LOCKUPS                                                       -->
+<!-- ============================================================ -->
+<h2 class="section">1 · Lockups · Light + Dark</h2>
+<div class="lockups">
+
+  <!-- A · HORIZONTAL · una sola línea, dos tonos -->
+  <section class="lockup">
+    <header>
+      <h3>A · Horizontal two-tone</h3>
+      <span class="id">ball + "Tenis Tracker"</span>
+    </header>
+    <div class="row">
+      <div class="cell light">
+        <svg class="lockup-svg" viewBox="0 0 420 90" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(8 13)" color="#8c1d27">
+            <svg x="0" y="0" width="64" height="64" overflow="visible"><use href="#ball"/></svg>
+          </g>
+          <text x="92" y="60" font-family="Poppins, sans-serif"
+            font-weight="800" font-size="40" fill="#2a2a2a" letter-spacing="-0.02em">
+            Tenis<tspan dx="6" fill="#8c1d27" font-weight="700">Tracker</tspan>
+          </text>
+        </svg>
+      </div>
+      <div class="cell dark">
+        <svg class="lockup-svg" viewBox="0 0 420 90" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(8 13)" color="#f8f4ee">
+            <svg x="0" y="0" width="64" height="64" overflow="visible"><use href="#ball"/></svg>
+          </g>
+          <text x="92" y="60" font-family="Poppins, sans-serif"
+            font-weight="800" font-size="40" fill="#f8f4ee" letter-spacing="-0.02em">
+            Tenis<tspan dx="6" fill="#c44a55" font-weight="700">Tracker</tspan>
+          </text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- B · HORIZONTAL · una sola línea, mono color -->
+  <section class="lockup">
+    <header>
+      <h3>B · Horizontal mono</h3>
+      <span class="id">todo borgoña</span>
+    </header>
+    <div class="row">
+      <div class="cell light">
+        <svg class="lockup-svg" viewBox="0 0 420 90" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(8 13)" color="#8c1d27">
+            <svg x="0" y="0" width="64" height="64" overflow="visible"><use href="#ball"/></svg>
+          </g>
+          <text x="92" y="60" font-family="Poppins, sans-serif"
+            font-weight="800" font-size="40" fill="#8c1d27" letter-spacing="-0.02em">
+            Tenis Tracker
+          </text>
+        </svg>
+      </div>
+      <div class="cell dark">
+        <svg class="lockup-svg" viewBox="0 0 420 90" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(8 13)" color="#f8f4ee">
+            <svg x="0" y="0" width="64" height="64" overflow="visible"><use href="#ball"/></svg>
+          </g>
+          <text x="92" y="60" font-family="Poppins, sans-serif"
+            font-weight="800" font-size="40" fill="#f8f4ee" letter-spacing="-0.02em">
+            Tenis Tracker
+          </text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- C · STACKED dos líneas Tenis / Tracker a la derecha -->
+  <section class="lockup">
+    <header>
+      <h3>C · Two-line right</h3>
+      <span class="id">ball + Tenis / Tracker</span>
+    </header>
+    <div class="row">
+      <div class="cell light">
+        <svg class="lockup-svg" viewBox="0 0 360 110" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(10 12)" color="#8c1d27">
+            <svg x="0" y="0" width="86" height="86" overflow="visible"><use href="#ball"/></svg>
+          </g>
+          <text x="112" y="50" font-family="Poppins, sans-serif"
+            font-weight="800" font-size="34" fill="#2a2a2a" letter-spacing="-0.02em">
+            Tenis
+          </text>
+          <text x="112" y="86" font-family="Poppins, sans-serif"
+            font-weight="700" font-size="34" fill="#8c1d27" letter-spacing="-0.02em">
+            Tracker
+          </text>
+        </svg>
+      </div>
+      <div class="cell dark">
+        <svg class="lockup-svg" viewBox="0 0 360 110" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(10 12)" color="#f8f4ee">
+            <svg x="0" y="0" width="86" height="86" overflow="visible"><use href="#ball"/></svg>
+          </g>
+          <text x="112" y="50" font-family="Poppins, sans-serif"
+            font-weight="800" font-size="34" fill="#f8f4ee" letter-spacing="-0.02em">
+            Tenis
+          </text>
+          <text x="112" y="86" font-family="Poppins, sans-serif"
+            font-weight="700" font-size="34" fill="#c44a55" letter-spacing="-0.02em">
+            Tracker
+          </text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- D · STACKED · ball encima centrada -->
+  <section class="lockup">
+    <header>
+      <h3>D · Stacked centered</h3>
+      <span class="id">ball above, wordmark below</span>
+    </header>
+    <div class="row">
+      <div class="cell light">
+        <svg class="lockup-svg" viewBox="0 0 280 200" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(105 15)" color="#8c1d27">
+            <svg x="0" y="0" width="70" height="70" overflow="visible"><use href="#ball"/></svg>
+          </g>
+          <text x="140" y="120" text-anchor="middle" font-family="Poppins, sans-serif"
+            font-weight="800" font-size="30" fill="#2a2a2a" letter-spacing="-0.02em">
+            Tenis<tspan dx="4" fill="#8c1d27" font-weight="700">Tracker</tspan>
+          </text>
+        </svg>
+      </div>
+      <div class="cell dark">
+        <svg class="lockup-svg" viewBox="0 0 280 200" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(105 15)" color="#f8f4ee">
+            <svg x="0" y="0" width="70" height="70" overflow="visible"><use href="#ball"/></svg>
+          </g>
+          <text x="140" y="120" text-anchor="middle" font-family="Poppins, sans-serif"
+            font-weight="800" font-size="30" fill="#f8f4ee" letter-spacing="-0.02em">
+            Tenis<tspan dx="4" fill="#c44a55" font-weight="700">Tracker</tspan>
+          </text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- E · WORDMARK ONLY · sin pelota, super tipográfico -->
+  <section class="lockup">
+    <header>
+      <h3>E · Wordmark only</h3>
+      <span class="id">sin pelota, solo tipografía</span>
+    </header>
+    <div class="row">
+      <div class="cell light">
+        <svg class="lockup-svg" viewBox="0 0 380 90" xmlns="http://www.w3.org/2000/svg">
+          <text x="14" y="60" font-family="Poppins, sans-serif"
+            font-weight="800" font-size="44" fill="#2a2a2a" letter-spacing="-0.03em">
+            Tenis<tspan dx="4" fill="#8c1d27" font-weight="700">Tracker</tspan>
+          </text>
+        </svg>
+      </div>
+      <div class="cell dark">
+        <svg class="lockup-svg" viewBox="0 0 380 90" xmlns="http://www.w3.org/2000/svg">
+          <text x="14" y="60" font-family="Poppins, sans-serif"
+            font-weight="800" font-size="44" fill="#f8f4ee" letter-spacing="-0.03em">
+            Tenis<tspan dx="4" fill="#c44a55" font-weight="700">Tracker</tspan>
+          </text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- F · COMPACT · sólo pelota como mark (sin wordmark) -->
+  <section class="lockup">
+    <header>
+      <h3>F · Mark only</h3>
+      <span class="id">solo la pelota — para favicon / app icon</span>
+    </header>
+    <div class="row">
+      <div class="cell light" style="color:#8c1d27">
+        <svg class="lockup-svg" viewBox="0 0 24 24" style="width:90px;height:90px">
+          <use href="#ball"/>
+        </svg>
+      </div>
+      <div class="cell dark" style="color:#c44a55">
+        <svg class="lockup-svg" viewBox="0 0 24 24" style="width:90px;height:90px">
+          <use href="#ball"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- ICONO EN ESCALAS                                              -->
+<!-- ============================================================ -->
+<h2 class="section">2 · Mark en escalas (favicon → splash)</h2>
+<div class="icon-sizes">
+  <div class="label">stroke 1.5<br/>(estándar)</div>
+  <div class="s s16"><svg viewBox="0 0 24 24"><use href="#ball"/></svg><small>16</small></div>
+  <div class="s s20"><svg viewBox="0 0 24 24"><use href="#ball"/></svg><small>20</small></div>
+  <div class="s s24"><svg viewBox="0 0 24 24"><use href="#ball"/></svg><small>24</small></div>
+  <div class="s s32"><svg viewBox="0 0 24 24"><use href="#ball"/></svg><small>32</small></div>
+  <div class="s s48"><svg viewBox="0 0 24 24"><use href="#ball"/></svg><small>48</small></div>
+  <div class="s s64"><svg viewBox="0 0 24 24"><use href="#ball"/></svg><small>64</small></div>
+  <div class="s s128"><svg viewBox="0 0 24 24"><use href="#ball"/></svg><small>128</small></div>
+</div>
+
+<div class="icon-sizes" style="margin-top: 14px;">
+  <div class="label">stroke 2.5<br/>(bold, para tiny)</div>
+  <div class="s s16"><svg viewBox="0 0 24 24"><use href="#ball-bold"/></svg><small>16</small></div>
+  <div class="s s20"><svg viewBox="0 0 24 24"><use href="#ball-bold"/></svg><small>20</small></div>
+  <div class="s s24"><svg viewBox="0 0 24 24"><use href="#ball-bold"/></svg><small>24</small></div>
+  <div class="s s32"><svg viewBox="0 0 24 24"><use href="#ball-bold"/></svg><small>32</small></div>
+  <div class="s s48"><svg viewBox="0 0 24 24"><use href="#ball-bold"/></svg><small>48</small></div>
+  <div class="s s64"><svg viewBox="0 0 24 24"><use href="#ball-bold"/></svg><small>64</small></div>
+  <div class="s s128"><svg viewBox="0 0 24 24"><use href="#ball-bold"/></svg><small>128</small></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MOCKUPS DE USO REAL                                           -->
+<!-- ============================================================ -->
+<h2 class="section">3 · Mockups en contexto</h2>
+<div class="mockups">
+
+  <!-- Mockup header -->
+  <div class="mockup">
+    <div class="mockup-header">
+      <svg viewBox="0 0 320 50" style="height: 36px">
+        <g transform="translate(0 6)" color="#8c1d27">
+          <svg x="0" y="0" width="38" height="38" overflow="visible"><use href="#ball"/></svg>
+        </g>
+        <text x="50" y="34" font-family="Poppins, sans-serif"
+          font-weight="800" font-size="22" fill="#2a2a2a" letter-spacing="-0.02em">
+          Tenis<tspan dx="4" fill="#8c1d27" font-weight="700">Tracker</tspan>
+        </text>
+      </svg>
+      <div class="menu">
+        <span>Torneos</span><span>Rivales</span><span>Stats</span>
+      </div>
+    </div>
+    <div class="mockup-body">
+      <div class="placeholder w70"></div>
+      <div class="placeholder"></div>
+      <div class="placeholder w50"></div>
+      <div class="placeholder"></div>
+      <div style="margin-top: 24px; color: #888; font-size: 11px; font-family: 'IBM Plex Mono', monospace;">
+        header con lockup horizontal two-tone (A) · tamaño icono 38px
+      </div>
+    </div>
+  </div>
+
+  <!-- Splash / Login -->
+  <div class="mockup">
+    <div class="splash">
+      <svg viewBox="0 0 24 24" style="width: 84px; height: 84px; color: #8c1d27;"><use href="#ball"/></svg>
+      <svg viewBox="0 0 340 40" style="height: 32px;">
+        <text x="170" y="30" text-anchor="middle" font-family="Poppins, sans-serif"
+          font-weight="800" font-size="28" fill="#2a2a2a" letter-spacing="-0.02em">
+          Tenis<tspan dx="4" fill="#8c1d27" font-weight="700">Tracker</tspan>
+        </text>
+      </svg>
+      <div style="color: #888; font-size: 11px; font-family: 'IBM Plex Mono', monospace; margin-top: 8px;">
+        splash / login centered (D)
+      </div>
+    </div>
+  </div>
+
+  <!-- OG image preview -->
+  <div class="mockup" style="grid-column: 1 / -1;">
+    <div class="og">
+      <svg viewBox="0 0 600 250" style="width: 80%; max-width: 700px;">
+        <g transform="translate(30 50)" color="#8c1d27">
+          <svg x="0" y="0" width="160" height="160" overflow="visible"><use href="#ball"/></svg>
+        </g>
+        <text x="220" y="140" font-family="Poppins, sans-serif"
+          font-weight="800" font-size="76" fill="#2a2a2a" letter-spacing="-0.03em">
+          Tenis<tspan dx="6" fill="#8c1d27" font-weight="700">Tracker</tspan>
+        </text>
+        <text x="220" y="180" font-family="Poppins, sans-serif"
+          font-weight="400" font-size="22" fill="#666">
+          Llevá el registro de tus partidos.
+        </text>
+      </svg>
+    </div>
+    <div style="padding: 14px 20px; background: var(--cream); border-top: 1px solid #e0d8c8; color: #888; font-size: 11px; font-family: 'IBM Plex Mono', monospace; text-align: center;">
+      OG image 1200×630 preview
+    </div>
+  </div>
+
+</div>
+
+<div class="footer-note">
+  Notas:<br/>
+  · A/B/D usan la versión "stroke 1.5" del icono porque van con tamaños 64px+ donde se ve bien.<br/>
+  · Para favicon (16/32) recomiendo usar la versión "stroke 2.5" (bold) que aguanta mejor.<br/>
+  · El color borgoña es <code>#8c1d27</code> (= <code>oklch(0.465 0.147 24.94)</code>, el primary del theme).<br/>
+  · La fuente es Poppins, que ya está cargada en el proyecto vía next/font.
+</div>
+
+</body>
+</html>

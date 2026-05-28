@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { BarChart3Icon, ClipboardListIcon, Share2Icon } from 'lucide-react'
 import { TimelinePreview } from '@/components/landing/timeline-preview'
 import { CtaActions } from '@/components/landing/cta-actions'
+import { LogoStacked } from '@/components/logo'
 import { auth } from '@/lib/auth'
 import { getViewerChrome } from '@/services/user-service'
 
@@ -47,9 +48,8 @@ export default async function Home() {
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-16 px-6 py-20 sm:py-28">
       {/* Hero */}
       <section className="flex flex-col items-center gap-6 text-center">
-        <h1 className="font-serif text-4xl font-bold tracking-tight sm:text-5xl">
-          Tenis Tracker
-        </h1>
+        <h1 className="sr-only">Tenis Tracker</h1>
+        <LogoStacked />
         <p className="max-w-lg text-lg text-muted-foreground text-balance">
           Una app simple para llevar el registro de tus torneos de tenis: partidos,
           resultados y rivales, todos en un mismo lugar.

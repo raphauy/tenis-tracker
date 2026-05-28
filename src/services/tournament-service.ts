@@ -17,7 +17,7 @@ export type TournamentPending = {
   venueName: string
   startDate: Date | null
   createdAt: Date
-  createdBy: { name: string | null; email: string }
+  createdBy: { name: string | null; email: string | null }
   refCount: number
 }
 

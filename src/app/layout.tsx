@@ -8,7 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 const fontSans = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const fontMono = IBM_Plex_Mono({
