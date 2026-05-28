@@ -214,8 +214,19 @@ function aggregateByCategory(entries: StatEntry[]): CategoryRow[] {
       tournamentNames: sortedGroup.map((e) => e.tournamentName),
     })
   }
-  // Más torneos jugados primero; desempate alfabético.
-  return rows.sort((a, b) => b.tournaments - a.tournaments || a.category.localeCompare(b.category))
+  // Orden de la categoría: las numeradas primero (2da, 3ra, …, 7ma) ascendente
+  // —el número más chico es la categoría más alta—, luego las letras (A, B, …, E)
+  // alfabéticamente. Si aparece algo no numerado y no letra simple, cae con las letras.
+  return rows.sort((a, b) => compareCategoryNames(a.category, b.category))
+}
+
+function compareCategoryNames(a: string, b: string): number {
+  const na = a.match(/^(\d+)/)
+  const nb = b.match(/^(\d+)/)
+  if (na && nb) return Number(na[1]) - Number(nb[1])
+  if (na) return -1 // numeradas antes que letras
+  if (nb) return 1
+  return a.localeCompare(b, 'es')
 }
 
 // El mejor resultado derivado del grupo de participaciones.

@@ -73,10 +73,10 @@ export async function Stats({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <StatCard
           value={`${record.wins}-${record.losses}`}
-          label="Récord"
+          label="Win-Loss"
           note={walkoversWon > 0 ? `+${walkoversWon} W.O.` : undefined}
         />
-        <StatCard value={formatPct(record.winPct)} label="Win%" />
+        <StatCard value={formatPct(record.winPct)} label="Win rate" />
         <StatCard value={String(achievements.titles)} label="Títulos" />
         <StatCard value={String(achievements.finals)} label="Finales" />
         <StatCard value={String(achievements.semis)} label="Semis" />
