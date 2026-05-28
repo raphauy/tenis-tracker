@@ -67,6 +67,15 @@ export async function getSuperadminEmails(): Promise<string[]> {
   return admins.map((a) => a.email)
 }
 
+// Perfiles públicos activos con slug, para el sitemap.
+// Excluye PRIVATE (no debe aparecer en buscadores aunque vivan en URL conocida).
+export async function getPublicProfilesForSitemap() {
+  return prisma.user.findMany({
+    where: { isActive: true, visibility: 'PUBLIC', slug: { not: null } },
+    select: { slug: true, updatedAt: true },
+  })
+}
+
 // Self-signup: crea el usuario (role USER) si no existe. Idempotente por email.
 export async function upsertUserByEmail(email: string) {
   return prisma.user.upsert({

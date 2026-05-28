@@ -8,11 +8,11 @@
 
 ## Goal
 
-Que un jugador amateur lleve el log de su carrera tenística: registra los torneos que juega, sus partidos por ronda (rival + marcador) y ve su recorrido en una **línea de tiempo** expandible y un **dashboard de estadísticas**. La app es multi-usuario: cada quien tiene su carrera privada, pero **Torneos, Categorías y Sedes** viven en un **catálogo compartido curado** por el superadmin.
+Que un jugador lleve el log de sus partidos de tenis: registra los torneos que juega, sus partidos por ronda (rival + marcador) y ve su recorrido en una **línea de tiempo** expandible y un **dashboard de estadísticas**. La app es multi-usuario: cada quien tiene su carrera privada, pero **Torneos, Categorías y Sedes** viven en un **catálogo compartido curado** por el superadmin.
 
 ## Why
 
-- Hoy no existe un registro personal de carrera amateur: los resultados quedan en la web de cada club, dispersos y efímeros.
+- Hoy no existe un registro personal de los partidos jugados: los resultados quedan en la web de cada club, dispersos y efímeros.
 - Un log propio habilita estadísticas (récord, títulos, head-to-head) que motivan y miden progreso.
 - El catálogo compartido evita que cada usuario recree los mismos torneos/sedes y sienta las bases sociales para features futuras (head-to-head entre usuarios, rankings).
 

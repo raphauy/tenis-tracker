@@ -1,6 +1,34 @@
 import { Suspense } from 'react'
-import { resolveProfile } from '@/lib/profile'
+import type { Metadata } from 'next'
+import { resolveProfile, getProfileBySlugCached } from '@/lib/profile'
 import { getViewerChrome } from '@/services/user-service'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const owner = await getProfileBySlugCached(slug)
+  if (!owner) return { title: 'Estadísticas', robots: { index: false, follow: false } }
+
+  const name = owner.name ?? owner.slug ?? slug
+  const isPrivate = owner.visibility === 'PRIVATE'
+  const description = isPrivate
+    ? `El perfil de ${name} es privado.`
+    : `Estadísticas de ${name}: récord W/L, títulos, mejores categorías y rivales frecuentes.`
+  const images = owner.image ? [{ url: owner.image, alt: name }] : undefined
+  const url = `/${slug}/stats`
+
+  return {
+    title: `Estadísticas de ${name}`,
+    description,
+    alternates: { canonical: url },
+    robots: isPrivate ? { index: false, follow: false } : { index: true, follow: true },
+    openGraph: { type: 'profile', url, title: `Estadísticas de ${name}`, description, images },
+    twitter: { card: 'summary', title: `Estadísticas de ${name}`, description, images: owner.image ? [owner.image] : undefined },
+  }
+}
 import { ProfileHeader } from '@/components/profile/profile-header'
 import { ProfileNav } from '@/components/profile/profile-nav'
 import { PrivateProfile } from '@/components/profile/private-profile'

@@ -1,7 +1,13 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { requireUser } from '@/lib/auth-helpers'
 import { getViewerChrome } from '@/services/user-service'
 import { OnboardingForm } from './onboarding-form'
+
+export const metadata: Metadata = {
+  title: 'Bienvenido',
+  robots: { index: false, follow: false },
+}
 
 // Host visible en el prefijo del slug (sin protocolo), estilo GitHub.
 function appHost(): string {

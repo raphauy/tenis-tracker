@@ -23,9 +23,34 @@ const fontSerif = Libre_Baskerville({
   weight: ["400", "700"],
 });
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const DESCRIPTION =
+  "Llevá el registro de tus partidos de tenis: torneos, rivales y estadísticas. Gratis.";
+
 export const metadata: Metadata = {
-  title: "Tenis Tracker",
-  description: "Llevá el registro de tu carrera tenística: torneos, partidos, rivales y estadísticas.",
+  metadataBase: new URL(APP_URL),
+  title: {
+    default: "Tenis Tracker",
+    // Las páginas hijas pueden setear solo su título; este template arma el resto.
+    template: "%s · Tenis Tracker",
+  },
+  description: DESCRIPTION,
+  applicationName: "Tenis Tracker",
+  keywords: ["tenis", "torneos", "partidos", "rivales", "estadísticas", "AUT", "Uruguay"],
+  authors: [{ name: "Raphael Carvalho" }],
+  openGraph: {
+    type: "website",
+    siteName: "Tenis Tracker",
+    locale: "es_UY",
+    url: "/",
+    title: "Tenis Tracker",
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary",
+    title: "Tenis Tracker",
+    description: DESCRIPTION,
+  },
 };
 
 export default function RootLayout({

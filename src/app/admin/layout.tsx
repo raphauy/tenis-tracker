@@ -1,8 +1,14 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { auth } from '@/lib/auth'
 import { getViewerChrome } from '@/services/user-service'
 import { UserAvatar } from '@/components/user-avatar'
 import { AdminNav } from '@/components/admin/admin-nav'
+
+// Cubre todo /admin/*: nunca se indexa.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+}
 
 // El acceso (solo SUPERADMIN) ya lo garantiza src/proxy.ts.
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

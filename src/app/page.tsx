@@ -1,9 +1,16 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { BarChart3Icon, ClipboardListIcon, Share2Icon } from 'lucide-react'
 import { TimelinePreview } from '@/components/landing/timeline-preview'
 import { CtaActions } from '@/components/landing/cta-actions'
 import { auth } from '@/lib/auth'
 import { getViewerChrome } from '@/services/user-service'
+
+// Title se cae al default del root layout (sin el sufijo del template).
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+  openGraph: { url: '/' },
+}
 
 const FEATURES = [
   {

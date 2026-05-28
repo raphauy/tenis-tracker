@@ -1,6 +1,12 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { resolveProfile } from '@/lib/profile'
+
+export const metadata: Metadata = {
+  title: 'Participación',
+  robots: { index: false, follow: false },
+}
 import { getEntryById } from '@/services/entry-service'
 import { getPlayersForUser } from '@/services/player-service'
 import { deriveTournamentResult } from '@/lib/tennis/derive'

@@ -1,7 +1,13 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { resolveProfile } from '@/lib/profile'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { AjustesForm } from './ajustes-form'
+
+export const metadata: Metadata = {
+  title: 'Ajustes',
+  robots: { index: false, follow: false },
+}
 
 function appHost(): string {
   return (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/^https?:\/\//, '').replace(/\/$/, '')

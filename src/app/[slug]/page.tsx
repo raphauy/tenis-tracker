@@ -16,7 +16,27 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params
   const owner = await getProfileBySlugCached(slug)
-  return { title: owner?.name ? `${owner.name} · Tenis Tracker` : 'Tenis Tracker' }
+  if (!owner) {
+    return { title: 'Perfil no encontrado', robots: { index: false, follow: false } }
+  }
+
+  const name = owner.name ?? owner.slug ?? slug
+  const isPrivate = owner.visibility === 'PRIVATE'
+  const description = isPrivate
+    ? `El perfil de ${name} es privado.`
+    : `Registro de partidos de tenis de ${name} en Tenis Tracker — torneos, partidos, rivales y estadísticas.`
+  const images = owner.image ? [{ url: owner.image, alt: name }] : undefined
+  const url = `/${slug}`
+
+  return {
+    title: name, // el template del root le suma " · Tenis Tracker"
+    description,
+    alternates: { canonical: url },
+    // Los perfiles privados no se indexan ni se siguen aunque el buscador conozca la URL.
+    robots: isPrivate ? { index: false, follow: false } : { index: true, follow: true },
+    openGraph: { type: 'profile', url, title: name, description, images },
+    twitter: { card: 'summary', title: name, description, images: owner.image ? [owner.image] : undefined },
+  }
 }
 
 export default async function ProfilePage({ params }: { params: Promise<{ slug: string }> }) {
