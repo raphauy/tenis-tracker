@@ -278,6 +278,13 @@ function ReplyForm({ to, windowOpen }: { to: string; windowOpen: boolean }) {
       <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
+        onKeyDown={(e) => {
+          // Enter envía; cualquier Enter con modificador (Ctrl/Shift/Cmd/Alt) inserta salto.
+          if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+            e.preventDefault()
+            e.currentTarget.form?.requestSubmit()
+          }
+        }}
         placeholder="Escribí una respuesta…"
         rows={2}
         disabled={sending}
