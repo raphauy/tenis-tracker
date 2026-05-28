@@ -122,7 +122,7 @@ function tournamentsLabel(n: number): string {
 // resultado como badge a la derecha.
 function YearTable({ rows }: { rows: YearRow[] }) {
   return (
-    <div className="divide-y overflow-hidden rounded-xl border">
+    <div className="divide-y overflow-hidden rounded-xl border bg-card shadow-sm">
       {rows.map((r) => (
         <div key={r.year} className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 flex-col gap-0.5">
@@ -144,7 +144,7 @@ function YearTable({ rows }: { rows: YearRow[] }) {
 
 function CategoryTable({ rows }: { rows: CategoryRow[] }) {
   return (
-    <div className="divide-y overflow-hidden rounded-xl border">
+    <div className="divide-y overflow-hidden rounded-xl border bg-card shadow-sm">
       {rows.map((r) => (
         <div key={r.category} className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 flex-col gap-1">
