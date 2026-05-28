@@ -44,6 +44,9 @@ export type CategoryRow = {
   wins: number
   losses: number
   bestResult: EntryResult
+  // Nombres de los torneos de esta categoría (más recientes primero) para mostrarlos
+  // al lado del badge en la UI; el orden depende de startDate ?? year.
+  tournamentNames: string[]
 }
 
 export type H2HMatch = {
@@ -196,12 +199,19 @@ function aggregateByCategory(entries: StatEntry[]): CategoryRow[] {
   const rows: CategoryRow[] = []
   for (const [category, group] of groups) {
     const { wins, losses } = tallyRecord(group.flatMap((e) => e.matches))
+    // Más recientes primero; null al final, desempate alfabético descendente.
+    const sortedGroup = [...group].sort((a, b) => {
+      const aKey = a.startDate ?? `${a.year}-00-00`
+      const bKey = b.startDate ?? `${b.year}-00-00`
+      return bKey.localeCompare(aKey)
+    })
     rows.push({
       category,
       tournaments: group.length,
       wins,
       losses,
       bestResult: bestResultOf(group),
+      tournamentNames: sortedGroup.map((e) => e.tournamentName),
     })
   }
   // Más torneos jugados primero; desempate alfabético.

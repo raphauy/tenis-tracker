@@ -3,6 +3,12 @@ import { getCareerStats } from '@/services/stats-service'
 import { ResultBadge } from '@/components/match/result-badge'
 import { CategoryBadge } from '@/components/match/category-badge'
 import { buttonVariants } from '@/components/ui/button'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { cn } from '@/lib/utils'
 import type { YearRow, CategoryRow } from '@/lib/tennis/stats'
 import { H2HList } from './h2h-list'
@@ -76,12 +82,6 @@ export async function Stats({
         <StatCard value={String(achievements.semis)} label="Semis" />
       </div>
 
-      {/* Por año */}
-      <section>
-        <SectionTitle>Por año</SectionTitle>
-        <YearTable rows={byYear} />
-      </section>
-
       {/* Por categoría */}
       <section>
         <SectionTitle>Por categoría</SectionTitle>
@@ -95,6 +95,20 @@ export async function Stats({
           <H2HList rows={h2h} />
         </section>
       )}
+
+      {/* Por año — accordion colapsado para no robarle protagonismo al resto */}
+      <section>
+        <Accordion>
+          <AccordionItem value="por-anio">
+            <AccordionTrigger className="font-heading text-sm font-semibold text-muted-foreground hover:no-underline">
+              Por año
+            </AccordionTrigger>
+            <AccordionContent>
+              <YearTable rows={byYear} />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </section>
     </div>
   )
 }
@@ -134,7 +148,15 @@ function CategoryTable({ rows }: { rows: CategoryRow[] }) {
       {rows.map((r) => (
         <div key={r.category} className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 flex-col gap-1">
-            <CategoryBadge name={r.category} className="w-fit" />
+            <div className="flex min-w-0 items-center gap-2">
+              <CategoryBadge name={r.category} />
+              <span
+                className="truncate text-xs text-muted-foreground"
+                title={r.tournamentNames.join(' · ')}
+              >
+                {r.tournamentNames.join(' · ')}
+              </span>
+            </div>
             <span className="text-xs text-muted-foreground">
               {tournamentsLabel(r.tournaments)} ·{' '}
               <span className="font-mono tabular-nums">
