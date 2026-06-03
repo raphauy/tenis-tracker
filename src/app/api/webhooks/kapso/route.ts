@@ -72,6 +72,9 @@ type InboundMessagePayload = {
   }
   conversation?: {
     phone_number?: string
+    // Nombre de perfil de WhatsApp del contacto (lo único de identidad que expone la Cloud API).
+    // Lo usamos solo al crear el User para pre-llenar el nombre del onboarding.
+    kapso?: { contact_name?: string }
   }
 }
 
@@ -146,7 +149,8 @@ export async function POST(req: Request) {
   }
 
   // Match exitoso: upsert por phone (crea o trae el User) y consume el code.
-  const user = await upsertUserByPhone(phone)
+  // Al crear, pre-llenamos el nombre con el de perfil de WhatsApp (se edita en el onboarding).
+  const user = await upsertUserByPhone(phone, payload.conversation?.kapso?.contact_name)
   await consumePendingAuth(code, phone, user.id)
   // Acknowledge por WA: el usuario está en su WhatsApp y necesita un cierre visual
   // + el empujón de "volvé a Tenis Tracker" donde el polling termina el login.

@@ -49,6 +49,7 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-10">
       <ProfileHeader
+        ownerId={owner.id}
         ownerName={owner.name ?? owner.slug ?? ''}
         ownerSlug={slug}
         ownerImage={owner.image}

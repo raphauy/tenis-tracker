@@ -14,10 +14,13 @@ type Props = {
   upload: (formData: FormData) => Promise<ActionResult<{ url: string }>>
   disabled?: boolean
   className?: string // tamaño del círculo, ej. "size-36"
+  // Contenido a mostrar en el estado vacío (ej. el avatar identicon actual). Sigue siendo
+  // clickeable/droppable: al hover aparece la acción de subir foto encima.
+  fallback?: React.ReactNode
 }
 
 // Avatar circular con carga por clic o drag & drop, y badge para quitar. Replica el patrón de OnMind.
-export function ImageUpload({ value, onChange, onError, upload, disabled, className }: Props) {
+export function ImageUpload({ value, onChange, onError, upload, disabled, className, fallback }: Props) {
   const [isUploading, setIsUploading] = React.useState(false)
   const [isDragging, setIsDragging] = React.useState(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -101,19 +104,32 @@ export function ImageUpload({ value, onChange, onError, upload, disabled, classN
             setIsDragging(false)
           }}
           className={cn(
-            'flex size-full flex-col items-center justify-center rounded-full border-2 border-dashed text-muted-foreground transition-colors',
-            isDragging ? 'border-primary bg-primary/5 text-primary' : 'hover:bg-muted/50',
+            'group/upload relative flex size-full flex-col items-center justify-center overflow-hidden rounded-full text-muted-foreground transition-colors',
+            fallback ? 'border' : 'border-2 border-dashed',
+            isDragging
+              ? 'border-primary bg-primary/5 text-primary'
+              : !fallback && 'hover:bg-muted/50',
             !disabled && !isUploading && 'cursor-pointer',
             disabled && 'cursor-not-allowed opacity-50'
           )}
         >
-          {isUploading ? (
-            <Loader2Icon className="size-6 animate-spin" />
-          ) : isDragging ? (
-            <UploadIcon className="size-6" />
-          ) : (
-            <ImagePlusIcon className="size-6" />
-          )}
+          {fallback && <div className="absolute inset-0">{fallback}</div>}
+          <div
+            className={cn(
+              'relative z-10 flex items-center justify-center',
+              fallback &&
+                'size-full bg-background/0 opacity-0 transition group-hover/upload:bg-background/50 group-hover/upload:opacity-100',
+              fallback && (isUploading || isDragging) && 'bg-background/50 opacity-100'
+            )}
+          >
+            {isUploading ? (
+              <Loader2Icon className="size-6 animate-spin" />
+            ) : isDragging ? (
+              <UploadIcon className="size-6" />
+            ) : (
+              <ImagePlusIcon className="size-6" />
+            )}
+          </div>
         </div>
       )}
     </div>

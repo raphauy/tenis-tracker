@@ -43,6 +43,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               image={viewer.image}
               slug={viewer.slug}
               role={viewer.role}
+              seed={viewer.id}
             />
           )}
         </div>

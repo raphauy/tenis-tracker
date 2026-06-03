@@ -85,12 +85,15 @@ export async function getPublicProfilesForSitemap() {
 // Self-signup por WhatsApp (Fase 2): identidad primaria = phone. Si el phone no existía,
 // se crea User(phone, phoneVerifiedAt=now). Idempotente por phone.
 // Sin email: el usuario lo agrega después en el onboarding/banner (opcional).
-export async function upsertUserByPhone(phone: string) {
+// `name`: nombre de perfil de WhatsApp (contact_name del webhook), usado solo al crear para
+// pre-llenar el onboarding. NO se pisa en logins recurrentes (update vacío).
+export async function upsertUserByPhone(phone: string, name?: string | null) {
   const now = new Date()
+  const cleanName = name?.trim().slice(0, 100) || null
   return prisma.user.upsert({
     where: { phone },
     update: {}, // si ya existe, no toca nada (login normal)
-    create: { phone, phoneVerifiedAt: now },
+    create: { phone, phoneVerifiedAt: now, name: cleanName },
   })
 }
 

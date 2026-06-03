@@ -1,11 +1,30 @@
 'use client'
 
-import { Avatar, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { GeneratedAvatar } from '@/components/generated-avatar'
 import { Dialog, DialogTrigger, DialogContent, DialogTitle } from '@/components/ui/dialog'
 
-// Avatar del dueño del Perfil: clickeable, abre un Dialog con la foto en grande.
-// Solo se renderiza cuando hay imagen (sin foto, el header muestra solo el nombre).
-export function OwnerAvatar({ image, name }: { image: string; name: string }) {
+// Avatar del dueño del Perfil. Con foto subida: clickeable, abre un Dialog con la foto en grande.
+// Sin foto: identicon generado (seed = User.id), no clickeable (no hay nada que ampliar).
+export function OwnerAvatar({
+  image,
+  seed,
+  name,
+}: {
+  image: string | null
+  seed: string
+  name: string
+}) {
+  if (!image) {
+    return (
+      <Avatar size="lg">
+        <AvatarFallback className="bg-muted p-0">
+          <GeneratedAvatar seed={seed} title={name} />
+        </AvatarFallback>
+      </Avatar>
+    )
+  }
+
   return (
     <Dialog>
       <DialogTrigger

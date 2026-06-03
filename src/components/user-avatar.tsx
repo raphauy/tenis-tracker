@@ -14,6 +14,7 @@ import {
   HomeIcon,
 } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { GeneratedAvatar } from '@/components/generated-avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { RoleBadge } from '@/components/role-badge'
 import { useMounted } from '@/hooks/use-mounted'
@@ -37,19 +38,11 @@ type Props = {
   image: string | null
   slug: string | null
   role: string
+  // Seed estable del identicon (User.id) usado como avatar cuando no hay foto.
+  seed: string
 }
 
-function initials(name: string | null, email: string | null): string {
-  const base = name?.trim() || email || '?'
-  return base
-    .split(/\s+/)
-    .map((w) => w[0] ?? '')
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
-
-export function UserAvatar({ name, email, image, slug, role }: Props) {
+export function UserAvatar({ name, email, image, slug, role, seed }: Props) {
   const mounted = useMounted()
   const { setTheme } = useTheme()
 
@@ -60,8 +53,10 @@ export function UserAvatar({ name, email, image, slug, role }: Props) {
     <DropdownMenu>
       <DropdownMenuTrigger className="cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <Avatar size="lg">
-          <AvatarImage src={image ?? undefined} alt={name ?? email ?? ''} />
-          <AvatarFallback>{initials(name, email)}</AvatarFallback>
+          {image && <AvatarImage src={image} alt={name ?? email ?? ''} />}
+          <AvatarFallback className="bg-muted p-0">
+            <GeneratedAvatar seed={seed} title={name ?? email ?? 'Avatar'} />
+          </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
 

@@ -10,9 +10,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ImageUpload } from '@/components/shared/image-upload'
+import { GeneratedAvatar } from '@/components/generated-avatar'
 import { uploadAvatarAction, updateProfileAction } from './actions'
 
 export function AjustesForm({
+  userId,
   slug,
   appHost,
   email,
@@ -20,6 +22,7 @@ export function AjustesForm({
   initialImage,
   initialVisibility,
 }: {
+  userId: string
   slug: string
   appHost: string
   email: string
@@ -61,6 +64,7 @@ export function AjustesForm({
           upload={uploadAvatarAction}
           disabled={saving}
           className="size-32"
+          fallback={<GeneratedAvatar seed={userId} title="Tu avatar actual" />}
         />
         <p className="text-sm text-muted-foreground">
           Hacé clic o arrastrá una imagen para cambiar tu foto · JPG o PNG, hasta 4 MB

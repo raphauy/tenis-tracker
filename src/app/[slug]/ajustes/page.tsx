@@ -27,6 +27,7 @@ export default async function AjustesPage({ params }: { params: Promise<{ slug: 
         </CardHeader>
         <CardContent>
           <AjustesForm
+            userId={owner.id}
             slug={slug}
             appHost={appHost()}
             email={viewer?.email ?? ''}

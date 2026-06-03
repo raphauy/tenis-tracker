@@ -52,6 +52,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-10">
       <ProfileHeader
+        ownerId={owner.id}
         ownerName={owner.name ?? owner.slug ?? ''}
         ownerSlug={slug}
         ownerImage={owner.image}
