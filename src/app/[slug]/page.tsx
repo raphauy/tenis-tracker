@@ -71,9 +71,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
         </>
       )}
 
-      <footer className="mt-16 border-t pt-8">
-        <CtaActions loggedInHref={loggedInHref} />
-      </footer>
+      {/* CTA de conversión: solo para visitantes. En tu propio perfil sería redundante (ya estás en "mis torneos"). */}
+      {!isOwner && (
+        <footer className="mt-16 border-t pt-8">
+          <CtaActions loggedInHref={loggedInHref} />
+        </footer>
+      )}
     </main>
   )
 }
