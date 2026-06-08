@@ -101,7 +101,10 @@ export function TournamentCombobox({
         toast.error(res.success ? 'No se pudo crear el torneo' : res.error)
         return
       }
-      const option: ComboOption = { id: res.data.id, label: res.data.name }
+      const option: ComboOption = {
+        id: res.data.id,
+        label: `${res.data.name} - ${MONTHS[Number(month)]} ${year}`,
+      }
       setExtras((prev) => [...prev, option])
       onChange(option.id)
       setOpen(false)

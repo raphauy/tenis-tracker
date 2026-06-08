@@ -14,6 +14,13 @@ import { getPlayersForUser } from '@/services/player-service'
 import { buttonVariants } from '@/components/ui/button'
 import { LoadWizard } from './load-wizard'
 
+// "abril 2026" — mes en español + año (UTC), sin el "de" del formato largo.
+function monthYear(date: Date | null): string | null {
+  if (!date) return null
+  const month = new Intl.DateTimeFormat('es', { month: 'long', timeZone: 'UTC' }).format(date)
+  return `${month} ${date.getUTCFullYear()}`
+}
+
 export default async function NuevoTorneoPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const { owner, isOwner } = await resolveProfile(slug)
@@ -37,7 +44,10 @@ export default async function NuevoTorneoPage({ params }: { params: Promise<{ sl
       </header>
 
       <LoadWizard
-        tournaments={tournaments.map((t) => ({ id: t.id, label: t.name }))}
+        tournaments={tournaments.map((t) => {
+          const date = monthYear(t.startDate)
+          return { id: t.id, label: date ? `${t.name} - ${date}` : t.name }
+        })}
         venues={venues.map((v) => ({ id: v.id, label: v.name }))}
         categories={categories.map((c) => ({ id: c.id, label: c.name }))}
         players={players.map((p) => ({ id: p.id, label: p.name, deletable: p.deletable }))}

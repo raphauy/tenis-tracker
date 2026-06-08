@@ -146,6 +146,69 @@ export function TimelineList({
     setYear(ALL)
   }
 
+  // Separamos los torneos en curso del resto para darles su propio bloque visual arriba.
+  const enCurso = filtered.filter((e) => e.result.kind === 'EN_CURSO')
+  const resto = filtered.filter((e) => e.result.kind !== 'EN_CURSO')
+
+  function renderEntry(entry: TimelineEntry) {
+    const matches = sortByRound(entry.matches)
+    return (
+      <AccordionItem
+        key={entry.id}
+        value={entry.id}
+        className="rounded-xl border bg-card px-4 shadow-sm"
+      >
+        <AccordionTrigger className="py-3.5">
+          <div className="flex flex-1 flex-col gap-4 pr-8">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+              <span className="font-medium">{entry.tournamentName}</span>
+              <ResultBadge result={entry.result} />
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {entry.startDate && `${formatMonthYear(entry.startDate)} · `}
+              {entry.venueName}
+            </span>
+          </div>
+          <CategoryBadge name={entry.categoryName} className="absolute right-0 bottom-3.5" />
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="flex flex-col gap-2">
+            {matches.map((m) => (
+              <div
+                key={m.id}
+                className="flex items-start justify-between gap-3 border-t py-2 text-sm first:border-t-0"
+              >
+                <span className="w-16 shrink-0 pt-0.5 text-muted-foreground">
+                  {ROUND_LABELS_SHORT[m.round]}
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="truncate">{m.opponentName ?? '—'}</span>
+                  <ScoreText
+                    type={m.type}
+                    status={m.status}
+                    sets={m.sets}
+                    className="text-xs text-muted-foreground"
+                  />
+                </div>
+                <WinLoss winner={m.winner} className="mt-0.5 shrink-0" />
+              </div>
+            ))}
+            {isOwner && (
+              <div className="pt-1">
+                <Link
+                  href={`/${slug}/participacion/${entry.id}`}
+                  className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                >
+                  Ver detalle / editar
+                </Link>
+              </div>
+            )}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {/* Filtros */}
@@ -268,64 +331,19 @@ export function TimelineList({
         </div>
       ) : (
         <Accordion className="flex flex-col gap-3">
-          {filtered.map((entry) => {
-            const matches = sortByRound(entry.matches)
-            return (
-              <AccordionItem
-                key={entry.id}
-                value={entry.id}
-                className="rounded-xl border bg-card px-4 shadow-sm"
-              >
-                <AccordionTrigger className="py-3.5">
-                  <div className="flex flex-1 flex-col gap-4 pr-8">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                      <span className="font-medium">{entry.tournamentName}</span>
-                      <ResultBadge result={entry.result} />
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {entry.startDate && `${formatMonthYear(entry.startDate)} · `}
-                      {entry.venueName}
-                    </span>
-                  </div>
-                  <CategoryBadge name={entry.categoryName} className="absolute right-0 bottom-3.5" />
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="flex flex-col gap-2">
-                    {matches.map((m) => (
-                      <div
-                        key={m.id}
-                        className="flex items-start justify-between gap-3 border-t py-2 text-sm first:border-t-0"
-                      >
-                        <span className="w-16 shrink-0 pt-0.5 text-muted-foreground">
-                          {ROUND_LABELS_SHORT[m.round]}
-                        </span>
-                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                          <span className="truncate">{m.opponentName ?? '—'}</span>
-                          <ScoreText
-                            type={m.type}
-                            status={m.status}
-                            sets={m.sets}
-                            className="text-xs text-muted-foreground"
-                          />
-                        </div>
-                        <WinLoss winner={m.winner} className="mt-0.5 shrink-0" />
-                      </div>
-                    ))}
-                    {isOwner && (
-                      <div className="pt-1">
-                        <Link
-                          href={`/${slug}/participacion/${entry.id}`}
-                          className={buttonVariants({ variant: 'outline', size: 'sm' })}
-                        >
-                          Ver detalle / editar
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            )
-          })}
+          {/* Solo titulamos los bloques cuando hay torneos en curso que distinguir del resto. */}
+          {enCurso.length > 0 && (
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              En curso
+            </h2>
+          )}
+          {enCurso.map(renderEntry)}
+          {enCurso.length > 0 && resto.length > 0 && (
+            <h2 className="mt-16 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Finalizados
+            </h2>
+          )}
+          {resto.map(renderEntry)}
         </Accordion>
       )}
     </div>
