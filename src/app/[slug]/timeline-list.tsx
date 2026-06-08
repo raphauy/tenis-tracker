@@ -334,13 +334,13 @@ export function TimelineList({
           {/* Solo titulamos los bloques cuando hay torneos en curso que distinguir del resto. */}
           {enCurso.length > 0 && (
             <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              En curso
+              En curso ({enCurso.length})
             </h2>
           )}
           {enCurso.map(renderEntry)}
           {enCurso.length > 0 && resto.length > 0 && (
             <h2 className="mt-16 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Finalizados
+              Finalizados ({resto.length})
             </h2>
           )}
           {resto.map(renderEntry)}
