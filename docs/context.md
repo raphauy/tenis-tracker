@@ -134,6 +134,31 @@ _Evitar_: H2H entre usuarios (post-MVP) — esto es solo contra Jugadores del ca
 **Año** (de una stat):
 Sale de `tournament.startDate`; si es null, cae al `createdAt` de la Participación (mismo fallback que ordena la timeline).
 
+### Cuadros externos
+
+Términos de la feature **cuadros** (mostrar brackets de torneos de terceros en `/cuadros`). Diseño en `docs/PRPs/cuadros-prp.md`; factibilidad de las fuentes en `docs/research/cuadros-*.md`. Son **públicos y sin dueño** — no confundir con el recorrido privado del usuario (Participación/Partido).
+
+**Cuadro externo** (o **Cuadro público**):
+Bracket de eliminación de un torneo de terceros, **sin dueño**, sincronizado desde una **Fuente** externa y servido desde nuestra DB (no en vivo). Se renderiza entero. Distinto del **Partido**/**Participación** (carrera privada atada a `userId`).
+_Código_: modelos nuevos, separados de `Tournament`/`Entry`/`Match` (nombres finos en el PRP).
+_Evitar_: reusar `Tournament`/`Match` del dominio privado para esto.
+
+**Fuente**:
+Origen de datos de uno o más cuadros externos. Se **registra en código** (registry tipado) con su **Adapter** + config de instancia (ej. `spreadsheetId`, o `baseUrl` + filtro de nombre). Una fuente expone 1..N **Torneos externos** (se descubren en el sync).
+_Evitar_: tratar la fuente como "un torneo" — es el contenedor; los torneos se derivan de su contenido.
+
+**Adapter**:
+Módulo de código que normaliza una **Fuente** al cuadro normalizado común. MVP: `google-sheets-academia` (CSV posicional, tolerante a ruido) y `mur-supabase` (PostgREST limpio). Sumar un torneo del mismo tipo = nueva entrada de config (sin adapter nuevo); sumar un tipo nuevo = adapter nuevo.
+
+**Etapa**:
+Edición temporal de un torneo externo recurrente. En **MUR** cada etapa es un UUID estable; en **Academia MG** la planilla (mismo link) se **reusa** entre etapas, así que la etapa se **deriva del contenido** (filas de cabecera del CSV), no del locator.
+
+**Identidad de torneo externo** (`identityKey`):
+Clave estable por torneo externo que computa cada **Adapter**: por **locator** en MUR (`mur:<uuid>`), por **contenido** en Academia (`academia-mg:<etapa>`). El sync hace upsert por esta clave (no por el locator de la fuente).
+
+**live / archived**:
+Estado del torneo externo. `live` = presente en la fuente, se sigue sincronizando. `archived` = la fuente flipeó a otra etapa → se **congela** en su último snapshot, se marca "finalizado" y queda visible para siempre (Tenis Tracker como archivo histórico). No confundir `archived` con "desactualizado".
+
 ### WhatsApp y mensajería
 
 Términos de la feature **whatsapp-kapso** (integración vía Kapso, capa oficial sobre la Cloud API de Meta). Detalle de diseño en `docs/PRPs/whatsapp-kapso-{prp,roadmap}.md`.
