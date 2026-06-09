@@ -102,3 +102,24 @@ export function deriveTournamentResult(matches: MatchForResult[]): EntryResult {
   // Perdió antes de semis ⇒ eliminado en esa ronda. Ganó sin partido posterior ⇒ en curso.
   return wonLast ? { kind: 'EN_CURSO' } : { kind: 'ELIMINADO', round: last.round }
 }
+
+// Para una Participación EN_CURSO: ¿en qué ronda está el jugador AHORA?
+//  - Si hay un partido programado pendiente → su ronda (el de menor ronda, el próximo a jugar).
+//  - Si ganó su último partido (no final) y todavía no cargó el siguiente → la ronda siguiente.
+//  - Si no hay nada jugado ni programado (recién creada) → null (no se sabe).
+export function deriveCurrentRound(matches: MatchForResult[]): Round | null {
+  const relevant = matches.filter((m) => m.type !== MatchType.BYE)
+
+  const scheduled = relevant.filter((m) => m.status === MatchStatus.SCHEDULED)
+  if (scheduled.length > 0) {
+    return scheduled.reduce((a, b) => (roundIndex(b.round) < roundIndex(a.round) ? b : a)).round
+  }
+
+  const played = relevant.filter((m) => m.status === MatchStatus.PLAYED)
+  if (played.length === 0) return null
+  const last = played.reduce((a, b) => (roundIndex(b.round) > roundIndex(a.round) ? b : a))
+  if (last.winner === MatchSide.ME && last.round !== Round.FINAL) {
+    return ROUND_ORDER[roundIndex(last.round) + 1] ?? null
+  }
+  return null
+}

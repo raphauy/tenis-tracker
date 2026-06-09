@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { SearchIcon, XIcon } from 'lucide-react'
 import { Round, MatchType, MatchStatus, MatchSide } from '@prisma/client'
 import type { EntryResult } from '@/lib/tennis/derive'
-import { ROUND_ORDER } from '@/lib/tennis/derive'
-import { ROUND_LABELS_SHORT } from '@/lib/tennis/labels'
+import { ROUND_ORDER, deriveCurrentRound } from '@/lib/tennis/derive'
+import { ROUND_LABELS, ROUND_LABELS_SHORT } from '@/lib/tennis/labels'
 import type { SetScore } from '@/lib/tennis/set-score'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -152,6 +152,10 @@ export function TimelineList({
 
   function renderEntry(entry: TimelineEntry) {
     const matches = sortByRound(entry.matches)
+    // En los torneos en curso, mostramos en qué ronda está parado (al lado del badge),
+    // así no hace falta abrir el accordion para saber que ya avanzó.
+    const currentRound =
+      entry.result.kind === 'EN_CURSO' ? deriveCurrentRound(entry.matches) : null
     return (
       <AccordionItem
         key={entry.id}
@@ -163,6 +167,11 @@ export function TimelineList({
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
               <span className="font-medium">{entry.tournamentName}</span>
               <ResultBadge result={entry.result} />
+              {currentRound && (
+                <span className="text-xs font-medium text-muted-foreground">
+                  {ROUND_LABELS[currentRound]}
+                </span>
+              )}
             </div>
             <span className="text-xs text-muted-foreground">
               {entry.startDate && `${formatMonthYear(entry.startDate)} · `}
