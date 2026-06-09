@@ -36,7 +36,18 @@ export function ProfileHeader({
     <header className="mb-8 flex items-center justify-between gap-4">
       <div className="flex min-w-0 items-center gap-3">
         {!isOwner && <OwnerAvatar image={ownerImage} seed={ownerId} name={ownerName} />}
-        <h1 className="truncate text-2xl font-semibold tracking-tight">{ownerName}</h1>
+        <div className="flex min-w-0 flex-col">
+          <h1 className="truncate text-2xl font-semibold tracking-tight">{ownerName}</h1>
+          <Link
+            href="/cuadros"
+            className={buttonVariants({
+              variant: 'link',
+              className: 'h-auto justify-start px-0 text-sm font-normal',
+            })}
+          >
+            Ver cuadros
+          </Link>
+        </div>
       </div>
       {viewer ? (
         <UserAvatar

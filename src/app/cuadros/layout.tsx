@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { Logo } from '@/components/logo'
+import { AccountMenu } from '@/components/account-menu'
 
 export const metadata: Metadata = {
   title: 'Cuadros',
@@ -17,6 +18,7 @@ export default function CuadrosLayout({ children }: { children: React.ReactNode 
           <Link href="/" aria-label="Tenis Tracker">
             <Logo />
           </Link>
+          <AccountMenu callbackUrl="/cuadros" />
         </div>
       </header>
       {children}

@@ -11,6 +11,7 @@ import { TimelinePreview } from '@/components/landing/timeline-preview'
 import { BracketPreview } from '@/components/landing/bracket-preview'
 import { CtaActions } from '@/components/landing/cta-actions'
 import { LogoStacked } from '@/components/logo'
+import { AccountMenu } from '@/components/account-menu'
 import { Card } from '@/components/ui/card'
 import { auth } from '@/lib/auth'
 import { getViewerChrome } from '@/services/user-service'
@@ -54,8 +55,12 @@ export default async function Home() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-16 px-6 py-16 sm:gap-20 sm:py-24">
-      {/* Hero */}
+    <>
+      <header className="mx-auto flex w-full max-w-2xl items-center justify-end px-6 pt-6">
+        <AccountMenu callbackUrl="/" />
+      </header>
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-16 px-6 pb-16 pt-10 sm:gap-20 sm:pb-24 sm:pt-12">
+        {/* Hero */}
       <section className="flex flex-col items-center gap-6 text-center">
         <h1 className="sr-only">Tenis Tracker</h1>
         <LogoStacked />
@@ -170,6 +175,7 @@ export default async function Home() {
       <section className="flex flex-col items-center gap-4">
         <CtaActions loggedInHref={loggedInHref} />
       </section>
-    </main>
+      </main>
+    </>
   )
 }

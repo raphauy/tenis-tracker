@@ -12,6 +12,7 @@ import {
   MonitorIcon,
   UserIcon,
   HomeIcon,
+  TrophyIcon,
 } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { GeneratedAvatar } from '@/components/generated-avatar'
@@ -82,6 +83,11 @@ export function UserAvatar({ name, email, image, slug, role, seed }: Props) {
         <DropdownMenuItem render={<Link href="/" />}>
           <HomeIcon />
           Inicio
+        </DropdownMenuItem>
+
+        <DropdownMenuItem render={<Link href="/cuadros" />}>
+          <TrophyIcon />
+          Cuadros
         </DropdownMenuItem>
 
         {slug ? (
