@@ -11,6 +11,7 @@ import type {
   NormalizedMatch,
   NormalizedRound,
 } from '@/lib/cuadros/types'
+import { roundLabel } from '@/lib/cuadros/round-label'
 
 export type AcademiaHeader = {
   tournamentName: string
@@ -69,21 +70,6 @@ function nextPow2(n: number): number {
   let p = 1
   while (p < n) p *= 2
   return p
-}
-
-// Etiqueta de ronda por GEOMETRÍA (cantidad de partidos en la ronda), no por el header.
-function roundLabel(matchCount: number): string {
-  switch (matchCount) {
-    case 1: return 'Final'
-    case 2: return 'Semifinal'
-    case 4: return 'Cuartos'
-    case 8: return 'Octavos'
-    case 16: return '16avos'
-    case 32: return '32avos'
-    case 64: return '64avos'
-    case 128: return '128avos'
-    default: return `Ronda de ${matchCount * 2}`
-  }
 }
 
 // Clasifica el string crudo de la celda de score en outcome + score legible.

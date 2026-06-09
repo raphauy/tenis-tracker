@@ -61,6 +61,11 @@ export type FetchedBracket = {
 // `unknown` porque el registry es por string: cada adapter lo narrowa a su tipo.
 export interface SourceAdapter {
   type: string
+  // Cuándo un torneo de esta fuente pasa a `archived`:
+  //  - 'flip' (default): cuando deja de aparecer en la fuente (Academia reusa la planilla).
+  //  - 'completion': cuando su cuadro está completo (MUR no flipea: UUID estables, las
+  //    etapas viven para siempre; se archivan al jugarse todas las finales). Ver glosario.
+  archivePolicy?: 'flip' | 'completion'
   // Torneos/etapas vivos de la fuente. Si la fuente no se puede leer, LANZA
   // (la guarda de discovery del orquestador lo captura y NO archiva nada).
   discoverTournaments(config: unknown): Promise<DiscoveredTournament[]>

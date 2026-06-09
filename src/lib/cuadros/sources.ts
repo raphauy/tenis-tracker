@@ -15,5 +15,8 @@ export const SOURCES: SourceInstance[] = [
     type: 'google-sheets-academia',
     config: { spreadsheetId: '1JpCOXQf9IUobOre6LgqyWjluD6BEdNJ0W9I02lpiWEo' },
   },
-  // F2: { type: 'mur-supabase', config: { baseUrl: 'https://tsxzhdnyykknmivdpyzv.supabase.co/rest/v1', nameFilter: 'grados' } },
+  {
+    type: 'mur-supabase',
+    config: { baseUrl: 'https://tsxzhdnyykknmivdpyzv.supabase.co/rest/v1', nameFilter: 'grados' },
+  },
 ]

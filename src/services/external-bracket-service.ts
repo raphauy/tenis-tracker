@@ -3,7 +3,12 @@ import { Prisma } from '@prisma/client'
 import { prisma, withRetry } from '@/lib/prisma'
 import { SOURCES } from '@/lib/cuadros/sources'
 import { adapterFor } from '@/lib/cuadros/adapters'
+import { isBracketComplete } from '@/lib/cuadros/bracket-status'
 import type { NormalizedBracket } from '@/lib/cuadros/types'
+
+// Tras este lapso desde startDate, un torneo 'completion' se archiva aunque su final no
+// figure jugada (fallback ante metadata floja de la fuente; evita re-sincronizar para siempre).
+const COMPLETION_FALLBACK_MS = 30 * 24 * 60 * 60 * 1000
 import { getSuperadminEmails } from '@/services/user-service'
 import { sendSyncAlertEmail } from '@/services/email-service'
 
@@ -39,15 +44,31 @@ export async function upsertTournament(
         lastSyncedAt: new Date(),
         lastSyncError: null,
       },
+      // En update NO se pisan `slug` ni `status`: el slug se fija al crear (URLs estables
+      // aunque la fuente renombre) y el status lo gobiernan archiveMissing / completitud.
       update: {
-        slug: input.slug,
         name: input.name,
         startDate: input.startDate,
-        status: 'LIVE',
         lastSyncedAt: new Date(),
         lastSyncError: null,
       },
     })
+  )
+}
+
+// Lookup liviano por identityKey (para saber si un torneo ya está archivado y congelarlo).
+export async function findTournamentByIdentityKey(identityKey: string) {
+  return withRetry(() =>
+    prisma.externalTournament.findUnique({
+      where: { identityKey },
+      select: { id: true, status: true },
+    })
+  )
+}
+
+export async function setTournamentStatus(id: string, status: 'LIVE' | 'ARCHIVED') {
+  return withRetry(() =>
+    prisma.externalTournament.update({ where: { id }, data: { status } })
   )
 }
 
@@ -237,8 +258,18 @@ export async function syncExternalBrackets(): Promise<SyncReport> {
       const tournaments = await adapter.discoverTournaments(source.config)
       const seenKeys: string[] = []
 
+      const completion = adapter.archivePolicy === 'completion'
+
       for (const t of tournaments) {
         seenKeys.push(t.identityKey)
+
+        // Fuentes 'completion' (MUR no flipea): un torneo ya archivado se CONGELA — no se
+        // re-baja ni se re-toca (ni lastSyncedAt), conservando su último snapshot.
+        if (completion) {
+          const existing = await findTournamentByIdentityKey(t.identityKey)
+          if (existing?.status === 'ARCHIVED') continue
+        }
+
         const row = await upsertTournament(t.identityKey, {
           sourceType: source.type,
           slug: t.slug,
@@ -249,6 +280,8 @@ export async function syncExternalBrackets(): Promise<SyncReport> {
 
         const categories = await adapter.discoverCategories(source.config, t)
         const seenSlugs: string[] = []
+        let bracketsBuilt = 0
+        let allComplete = true // se vuelve false ante un bracket incompleto o un error
         for (const c of categories) {
           try {
             const res = await adapter.fetchBracket(source.config, c)
@@ -268,8 +301,11 @@ export async function syncExternalBrackets(): Promise<SyncReport> {
             })
             seenSlugs.push(c.slug)
             report.brackets++
+            bracketsBuilt++
+            if (!isBracketComplete(res.normalized)) allComplete = false
           } catch (e) {
             seenSlugs.push(c.slug) // fetch falló (transitorio): conservar el último cuadro bueno
+            allComplete = false // sin confirmar todas las finales → no archivar todavía
             await recordBracketSyncError(row.id, c.slug, errMsg(e))
             report.errors.push({ source: `${source.type}/${c.slug}`, message: errMsg(e) })
           }
@@ -278,6 +314,17 @@ export async function syncExternalBrackets(): Promise<SyncReport> {
         // Reconcilia: borra brackets cuya hoja desapareció/renombró (categorías fantasma).
         const removed = await deleteMissingBrackets(row.id, seenSlugs)
         report.removedBrackets += removed?.count ?? 0
+
+        // Archivado por completitud (fuentes 'completion'): todas las finales jugadas, o
+        // fallback de antigüedad si la fuente nunca marca la final. Al archivar, el próximo
+        // sync lo congela (no se vuelve a bajar).
+        if (completion && bracketsBuilt > 0) {
+          const old = !!t.startDate && Date.now() - t.startDate.getTime() > COMPLETION_FALLBACK_MS
+          if (allComplete || old) {
+            await setTournamentStatus(row.id, 'ARCHIVED')
+            report.archived++
+          }
+        }
       }
 
       const archived = await archiveMissing(source.type, seenKeys)

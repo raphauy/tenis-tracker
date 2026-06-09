@@ -1,0 +1,436 @@
+{
+  "matches": [
+    {
+      "match_number": 1,
+      "round": "Ronda de 32",
+      "player1_id": "abc74d76-7eaf-4d91-a083-99cae74f54bd",
+      "player2_id": null,
+      "winner_id": "abc74d76-7eaf-4d91-a083-99cae74f54bd",
+      "player1_score": null,
+      "player2_score": null,
+      "status": "completed"
+    },
+    {
+      "match_number": 2,
+      "round": "Ronda de 32",
+      "player1_id": null,
+      "player2_id": "e11c9637-865f-4f0b-9461-e9193829c4c9",
+      "winner_id": "e11c9637-865f-4f0b-9461-e9193829c4c9",
+      "player1_score": null,
+      "player2_score": null,
+      "status": "completed"
+    },
+    {
+      "match_number": 3,
+      "round": "Ronda de 32",
+      "player1_id": "1f6944b7-de9f-4f0a-9b6c-c7c24aea7f79",
+      "player2_id": "dc180410-ffaf-4e13-a63e-6c3efe62262d",
+      "winner_id": "1f6944b7-de9f-4f0a-9b6c-c7c24aea7f79",
+      "player1_score": "2-6, 6-3, 10-5",
+      "player2_score": "6-2, 3-6, 5-10",
+      "status": "completed"
+    },
+    {
+      "match_number": 4,
+      "round": "Ronda de 32",
+      "player1_id": null,
+      "player2_id": "28de4f0a-f71e-4a9a-8620-85e2a061ef30",
+      "winner_id": "28de4f0a-f71e-4a9a-8620-85e2a061ef30",
+      "player1_score": null,
+      "player2_score": null,
+      "status": "completed"
+    },
+    {
+      "match_number": 5,
+      "round": "Ronda de 32",
+      "player1_id": "eb865b75-617e-41e4-8565-2e3233882456",
+      "player2_id": null,
+      "winner_id": "eb865b75-617e-41e4-8565-2e3233882456",
+      "player1_score": null,
+      "player2_score": null,
+      "status": "completed"
+    },
+    {
+      "match_number": 6,
+      "round": "Ronda de 32",
+      "player1_id": "8c0a979d-5855-4469-9b7b-62cd1b06a288",
+      "player2_id": "0c68e381-3531-46a1-8288-9fb1d8f78625",
+      "winner_id": "0c68e381-3531-46a1-8288-9fb1d8f78625",
+      "player1_score": "0-6, 0-6",
+      "player2_score": "6-0, 6-0",
+      "status": "completed"
+    },
+    {
+      "match_number": 7,
+      "round": "Ronda de 32",
+      "player1_id": "30542315-e654-497f-ba00-0cf85cb1999b",
+      "player2_id": null,
+      "winner_id": "30542315-e654-497f-ba00-0cf85cb1999b",
+      "player1_score": null,
+      "player2_score": null,
+      "status": "completed"
+    },
+    {
+      "match_number": 8,
+      "round": "Ronda de 32",
+      "player1_id": null,
+      "player2_id": "457312b5-d947-4d61-a8f1-5c4a7042218e",
+      "winner_id": "457312b5-d947-4d61-a8f1-5c4a7042218e",
+      "player1_score": null,
+      "player2_score": null,
+      "status": "completed"
+    },
+    {
+      "match_number": 9,
+      "round": "Ronda de 32",
+      "player1_id": "3691894a-3cff-4807-8549-c8a15cd72148",
+      "player2_id": null,
+      "winner_id": "3691894a-3cff-4807-8549-c8a15cd72148",
+      "player1_score": null,
+      "player2_score": null,
+      "status": "completed"
+    },
+    {
+      "match_number": 10,
+      "round": "Ronda de 32",
+      "player1_id": null,
+      "player2_id": "63b7962c-f603-482b-b4d7-dde57782e296",
+      "winner_id": "63b7962c-f603-482b-b4d7-dde57782e296",
+      "player1_score": null,
+      "player2_score": null,
+      "status": "completed"
+    },
+    {
+      "match_number": 11,
+      "round": "Ronda de 32",
+      "player1_id": "cdbb5bff-6fb9-481e-817f-1953e8530a81",
+      "player2_id": null,
+      "winner_id": "cdbb5bff-6fb9-481e-817f-1953e8530a81",
+      "player1_score": null,
+      "player2_score": null,
+      "status": "completed"
+    },
+    {
+      "match_number": 12,
+      "round": "Ronda de 32",
+      "player1_id": null,
+      "player2_id": "d9bd57ec-e920-4cd5-bc65-193b03345df0",
+      "winner_id": "d9bd57ec-e920-4cd5-bc65-193b03345df0",
+      "player1_score": null,
+      "player2_score": null,
+      "status": "completed"
+    },
+    {
+      "match_number": 13,
+      "round": "Ronda de 32",
+      "player1_id": "205c6bfb-3921-4172-b91f-72add5e88a07",
+      "player2_id": null,
+      "winner_id": "205c6bfb-3921-4172-b91f-72add5e88a07",
+      "player1_score": null,
+      "player2_score": null,
+      "status": "completed"
+    },
+    {
+      "match_number": 14,
+      "round": "Ronda de 32",
+      "player1_id": "c7a8454a-2777-49b7-affc-6c6411e4c438",
+      "player2_id": "5077a4ec-ee1c-473a-a378-27e5658d5981",
+      "winner_id": "5077a4ec-ee1c-473a-a378-27e5658d5981",
+      "player1_score": "2-6, 1-6",
+      "player2_score": "6-2, 6-1",
+      "status": "completed"
+    },
+    {
+      "match_number": 15,
+      "round": "Ronda de 32",
+      "player1_id": "d907594f-7e6b-44d0-b733-8044db1802e4",
+      "player2_id": "2105a0bc-584b-4fc0-bf7d-a225fa091013",
+      "winner_id": "2105a0bc-584b-4fc0-bf7d-a225fa091013",
+      "player1_score": "4-6, 7-6, 7-10",
+      "player2_score": "6-4, 6-7, 10-7",
+      "status": "completed"
+    },
+    {
+      "match_number": 16,
+      "round": "Ronda de 32",
+      "player1_id": null,
+      "player2_id": "9d03e731-0fab-400c-8536-ae1ef058987b",
+      "winner_id": "9d03e731-0fab-400c-8536-ae1ef058987b",
+      "player1_score": null,
+      "player2_score": null,
+      "status": "completed"
+    },
+    {
+      "match_number": 17,
+      "round": "Ronda de 16",
+      "player1_id": "abc74d76-7eaf-4d91-a083-99cae74f54bd",
+      "player2_id": "e11c9637-865f-4f0b-9461-e9193829c4c9",
+      "winner_id": "abc74d76-7eaf-4d91-a083-99cae74f54bd",
+      "player1_score": "6-3, 6-3",
+      "player2_score": "3-6, 3-6",
+      "status": "completed"
+    },
+    {
+      "match_number": 18,
+      "round": "Ronda de 16",
+      "player1_id": "1f6944b7-de9f-4f0a-9b6c-c7c24aea7f79",
+      "player2_id": "28de4f0a-f71e-4a9a-8620-85e2a061ef30",
+      "winner_id": "28de4f0a-f71e-4a9a-8620-85e2a061ef30",
+      "player1_score": "3-6, 3-6",
+      "player2_score": "6-3, 6-3",
+      "status": "completed"
+    },
+    {
+      "match_number": 19,
+      "round": "Ronda de 16",
+      "player1_id": "eb865b75-617e-41e4-8565-2e3233882456",
+      "player2_id": "0c68e381-3531-46a1-8288-9fb1d8f78625",
+      "winner_id": "0c68e381-3531-46a1-8288-9fb1d8f78625",
+      "player1_score": "1-6, 4-6",
+      "player2_score": "6-1, 6-4",
+      "status": "completed"
+    },
+    {
+      "match_number": 20,
+      "round": "Ronda de 16",
+      "player1_id": "30542315-e654-497f-ba00-0cf85cb1999b",
+      "player2_id": "457312b5-d947-4d61-a8f1-5c4a7042218e",
+      "winner_id": "457312b5-d947-4d61-a8f1-5c4a7042218e",
+      "player1_score": "3-6, 3-6",
+      "player2_score": "6-3, 6-3",
+      "status": "completed"
+    },
+    {
+      "match_number": 21,
+      "round": "Ronda de 16",
+      "player1_id": "3691894a-3cff-4807-8549-c8a15cd72148",
+      "player2_id": "63b7962c-f603-482b-b4d7-dde57782e296",
+      "winner_id": null,
+      "player1_score": null,
+      "player2_score": null,
+      "status": "scheduled"
+    },
+    {
+      "match_number": 22,
+      "round": "Ronda de 16",
+      "player1_id": "cdbb5bff-6fb9-481e-817f-1953e8530a81",
+      "player2_id": "d9bd57ec-e920-4cd5-bc65-193b03345df0",
+      "winner_id": "cdbb5bff-6fb9-481e-817f-1953e8530a81",
+      "player1_score": "6-2, 6-0",
+      "player2_score": "2-6, 0-6",
+      "status": "completed"
+    },
+    {
+      "match_number": 23,
+      "round": "Ronda de 16",
+      "player1_id": "205c6bfb-3921-4172-b91f-72add5e88a07",
+      "player2_id": "5077a4ec-ee1c-473a-a378-27e5658d5981",
+      "winner_id": "5077a4ec-ee1c-473a-a378-27e5658d5981",
+      "player1_score": "3-6, 3-6",
+      "player2_score": "6-3, 6-3",
+      "status": "completed"
+    },
+    {
+      "match_number": 24,
+      "round": "Ronda de 16",
+      "player1_id": "2105a0bc-584b-4fc0-bf7d-a225fa091013",
+      "player2_id": "9d03e731-0fab-400c-8536-ae1ef058987b",
+      "winner_id": "9d03e731-0fab-400c-8536-ae1ef058987b",
+      "player1_score": "1-6, 1-6",
+      "player2_score": "6-1, 6-1",
+      "status": "completed"
+    },
+    {
+      "match_number": 25,
+      "round": "Cuartos de Final",
+      "player1_id": "abc74d76-7eaf-4d91-a083-99cae74f54bd",
+      "player2_id": "28de4f0a-f71e-4a9a-8620-85e2a061ef30",
+      "winner_id": "abc74d76-7eaf-4d91-a083-99cae74f54bd",
+      "player1_score": "6-1, 6-1",
+      "player2_score": "1-6, 1-6",
+      "status": "completed"
+    },
+    {
+      "match_number": 26,
+      "round": "Cuartos de Final",
+      "player1_id": "0c68e381-3531-46a1-8288-9fb1d8f78625",
+      "player2_id": "457312b5-d947-4d61-a8f1-5c4a7042218e",
+      "winner_id": "0c68e381-3531-46a1-8288-9fb1d8f78625",
+      "player1_score": "6-0, 6-0",
+      "player2_score": "0-6, 0-6",
+      "status": "completed"
+    },
+    {
+      "match_number": 27,
+      "round": "Cuartos de Final",
+      "player1_id": "63b7962c-f603-482b-b4d7-dde57782e296",
+      "player2_id": "cdbb5bff-6fb9-481e-817f-1953e8530a81",
+      "winner_id": "cdbb5bff-6fb9-481e-817f-1953e8530a81",
+      "player1_score": "1-6, 0-6",
+      "player2_score": "6-1, 6-0",
+      "status": "completed"
+    },
+    {
+      "match_number": 28,
+      "round": "Cuartos de Final",
+      "player1_id": "5077a4ec-ee1c-473a-a378-27e5658d5981",
+      "player2_id": "9d03e731-0fab-400c-8536-ae1ef058987b",
+      "winner_id": "9d03e731-0fab-400c-8536-ae1ef058987b",
+      "player1_score": "3-6, 3-6",
+      "player2_score": "6-3, 6-3",
+      "status": "completed"
+    },
+    {
+      "match_number": 29,
+      "round": "Semifinal",
+      "player1_id": "abc74d76-7eaf-4d91-a083-99cae74f54bd",
+      "player2_id": "0c68e381-3531-46a1-8288-9fb1d8f78625",
+      "winner_id": "0c68e381-3531-46a1-8288-9fb1d8f78625",
+      "player1_score": "1-6, 3-6",
+      "player2_score": "6-1, 6-3",
+      "status": "completed"
+    },
+    {
+      "match_number": 30,
+      "round": "Semifinal",
+      "player1_id": "cdbb5bff-6fb9-481e-817f-1953e8530a81",
+      "player2_id": "9d03e731-0fab-400c-8536-ae1ef058987b",
+      "winner_id": "cdbb5bff-6fb9-481e-817f-1953e8530a81",
+      "player1_score": "6-1, 6-0",
+      "player2_score": "1-6, 0-6",
+      "status": "completed"
+    },
+    {
+      "match_number": 31,
+      "round": "Final",
+      "player1_id": "0c68e381-3531-46a1-8288-9fb1d8f78625",
+      "player2_id": "cdbb5bff-6fb9-481e-817f-1953e8530a81",
+      "winner_id": "0c68e381-3531-46a1-8288-9fb1d8f78625",
+      "player1_score": "3-6, 6-4, 10-8",
+      "player2_score": "6-3, 4-6, 8-10",
+      "status": "completed"
+    }
+  ],
+  "registrations": [
+    {
+      "id": "2105a0bc-584b-4fc0-bf7d-a225fa091013",
+      "player_name": "Lei Perez",
+      "seed_position": null,
+      "player_id": "27132c30-320b-42ad-a5b3-78ba8e7009d0"
+    },
+    {
+      "id": "3691894a-3cff-4807-8549-c8a15cd72148",
+      "player_name": "Javier Alvarez ",
+      "seed_position": null,
+      "player_id": "d19fe961-93ed-4e25-b42c-ee3b6adb3ee9"
+    },
+    {
+      "id": "9d03e731-0fab-400c-8536-ae1ef058987b",
+      "player_name": "Nicolás Blanco",
+      "seed_position": null,
+      "player_id": "1bb85e94-dcb9-4a9b-9f28-ed0dfa122219"
+    },
+    {
+      "id": "63b7962c-f603-482b-b4d7-dde57782e296",
+      "player_name": "Juan Luketich",
+      "seed_position": null,
+      "player_id": "0c4b7bac-dbc9-4a62-bdaa-1381ad76fdd4"
+    },
+    {
+      "id": "eb865b75-617e-41e4-8565-2e3233882456",
+      "player_name": "Raphael Carvalho",
+      "seed_position": null,
+      "player_id": "b5bd0258-a009-4f77-b142-f0e73b9e9c73"
+    },
+    {
+      "id": "457312b5-d947-4d61-a8f1-5c4a7042218e",
+      "player_name": "Adrián Almaraz",
+      "seed_position": null,
+      "player_id": "60a710b2-ef51-4737-b313-bac684b29471"
+    },
+    {
+      "id": "8c0a979d-5855-4469-9b7b-62cd1b06a288",
+      "player_name": "Claudio Grandjean",
+      "seed_position": null,
+      "player_id": "9b2f3ab8-4d0b-4095-aa14-760979d1c53c"
+    },
+    {
+      "id": "205c6bfb-3921-4172-b91f-72add5e88a07",
+      "player_name": "Alejandro elola",
+      "seed_position": null,
+      "player_id": "65bfb9f6-3213-4747-85d7-02e0825ec530"
+    },
+    {
+      "id": "0c68e381-3531-46a1-8288-9fb1d8f78625",
+      "player_name": "Ignacio Reis",
+      "seed_position": null,
+      "player_id": "487adb91-4645-43fd-9c86-9029534d2b7b"
+    },
+    {
+      "id": "abc74d76-7eaf-4d91-a083-99cae74f54bd",
+      "player_name": "Santiago Risso",
+      "seed_position": null,
+      "player_id": "72da803d-8284-4fc7-a8e0-8680f533537a"
+    },
+    {
+      "id": "e11c9637-865f-4f0b-9461-e9193829c4c9",
+      "player_name": "Pablo Simon",
+      "seed_position": null,
+      "player_id": "cf38ac3b-f1fd-4586-a088-fcca65a9b3f3"
+    },
+    {
+      "id": "c7a8454a-2777-49b7-affc-6c6411e4c438",
+      "player_name": "Martín Rodriguez",
+      "seed_position": null,
+      "player_id": "d39c5d3c-43af-4297-b627-dc93acb44196"
+    },
+    {
+      "id": "d9bd57ec-e920-4cd5-bc65-193b03345df0",
+      "player_name": "Nicolas Añon",
+      "seed_position": null,
+      "player_id": "7b4d034f-1899-476a-b803-05e41d15f88f"
+    },
+    {
+      "id": "30542315-e654-497f-ba00-0cf85cb1999b",
+      "player_name": "Damián Bagini",
+      "seed_position": null,
+      "player_id": "709fcc81-e098-4093-bfec-11522865e3bc"
+    },
+    {
+      "id": "5077a4ec-ee1c-473a-a378-27e5658d5981",
+      "player_name": "Rodrigo Lagomarsino",
+      "seed_position": null,
+      "player_id": "b00e1edf-43b9-41ca-a6cb-de65f2195398"
+    },
+    {
+      "id": "28de4f0a-f71e-4a9a-8620-85e2a061ef30",
+      "player_name": "Juan Pedro Chiappara Falco",
+      "seed_position": null,
+      "player_id": "aa2185eb-6a3b-456c-99ed-14587be60f2e"
+    },
+    {
+      "id": "d907594f-7e6b-44d0-b733-8044db1802e4",
+      "player_name": "Marfei",
+      "seed_position": null,
+      "player_id": null
+    },
+    {
+      "id": "1f6944b7-de9f-4f0a-9b6c-c7c24aea7f79",
+      "player_name": "Gonzalo Frid",
+      "seed_position": null,
+      "player_id": "40a1acca-2844-4185-aafa-f17fdc979f83"
+    },
+    {
+      "id": "dc180410-ffaf-4e13-a63e-6c3efe62262d",
+      "player_name": "Cousillas",
+      "seed_position": null,
+      "player_id": null
+    },
+    {
+      "id": "cdbb5bff-6fb9-481e-817f-1953e8530a81",
+      "player_name": "Tricca",
+      "seed_position": null,
+      "player_id": null
+    }
+  ]
+}

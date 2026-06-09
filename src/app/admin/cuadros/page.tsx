@@ -14,7 +14,6 @@ async function PanelData() {
     name: t.name,
     slug: t.slug,
     status: t.status,
-    sourceType: t.sourceType,
     lastSyncedAt: t.lastSyncedAt,
     lastSyncError: t.lastSyncError,
     brackets: t.brackets.map((b) => ({
