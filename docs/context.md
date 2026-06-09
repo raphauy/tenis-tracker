@@ -157,7 +157,7 @@ Edición temporal de un torneo externo recurrente. En **MUR** cada etapa es un U
 Clave estable por torneo externo que computa cada **Adapter**: por **locator** en MUR (`mur:<uuid>`), por **contenido** en Academia (`academia-mg:<etapa>`). El sync hace upsert por esta clave (no por el locator de la fuente).
 
 **live / archived**:
-Estado del torneo externo. `live` = presente en la fuente, se sigue sincronizando. `archived` = la fuente flipeó a otra etapa → se **congela** en su último snapshot, se marca "finalizado" y queda visible para siempre (Tenis Tracker como archivo histórico). No confundir `archived` con "desactualizado".
+Estado del torneo externo. `live` = se sigue sincronizando. `archived` = se **congela** en su último snapshot, se marca "finalizado" y queda visible para siempre (Tenis Tracker como archivo histórico). El **disparador de archivado depende de la fuente**: en **Academia** es el *flip* (la planilla pasa a otra etapa y la vieja desaparece de la fuente); en **MUR** las etapas no desaparecen (UUID estables, siempre listadas), así que se archiva cuando el **bracket está completo** (todas las finales de la etapa jugadas), con fallback por antigüedad si la fuente nunca marca la final. No confundir `archived` con "desactualizado".
 
 ### WhatsApp y mensajería
 

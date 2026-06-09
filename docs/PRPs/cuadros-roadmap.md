@@ -19,7 +19,7 @@ Plan por fases secuenciales. PRP completo en [`cuadros-prp.md`](./cuadros-prp.md
 
 ## Fase 1 — Academia MG (bracket) + fundaciones
 
-- **Estado:** pendiente
+- **Estado:** hecha
 - **Objetivo:** la feature funciona end-to-end contra la fuente **difícil** (Academia MG): se ve el cuadro de bracket en `/cuadros` con UI mobile + desktop, sincronizado y persistido, con archive-on-flip. Validar la abstracción contra el caso ruidoso de una vez. Esta fase **migra el schema completo de la feature** (sirve también a MUR en F2).
 
 **Alcance**
