@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 const items = [
   { href: '/admin', label: 'Curado', match: (p: string) => p === '/admin' },
   { href: '/admin/whatsapp', label: 'WhatsApp', match: (p: string) => p.startsWith('/admin/whatsapp') },
+  { href: '/admin/cuadros', label: 'Cuadros', match: (p: string) => p.startsWith('/admin/cuadros') },
 ]
 
 export function AdminNav() {

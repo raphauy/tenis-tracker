@@ -9,6 +9,20 @@ function capitalize(segment: string): string {
   return segment.charAt(0).toLocaleUpperCase('es') + segment.slice(1)
 }
 
+// Clave de match tolerante de un nombre: sin tildes/ñ, minúsculas, sin puntos,
+// espacios colapsados. Para comparar nombres de cuadros de forma robusta (favoritos).
+// "F. Echávarria " → "f echavarria". La misma función la usan el service (al guardar
+// el favorito) y el cliente (al matchear cada slot), para que coincidan.
+export function normalizeName(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/\./g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 // Normaliza el nombre de un Jugador a Title Case en español:
 // - cada palabra capitalizada; las partículas (de, del, la...) en minúscula salvo la primera palabra;
 // - capitaliza también tras un guion (apellidos compuestos: "ana-maría" → "Ana-María");

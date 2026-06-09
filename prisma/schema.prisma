@@ -78,9 +78,10 @@ model User {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  entries      Entry[]
-  otpTokens    OtpToken[]
-  pendingAuths PendingAuth[] @relation("UserPendingAuths")
+  entries         Entry[]
+  otpTokens       OtpToken[]
+  pendingAuths    PendingAuth[]    @relation("UserPendingAuths")
+  favoritePlayers FavoritePlayer[]
 
   createdVenues      Venue[]      @relation("VenueCreatedBy")
   createdCategories  Category[]   @relation("CategoryCreatedBy")
@@ -230,4 +231,77 @@ model Match {
 
   @@index([entryId])
   @@index([opponentId])
+}
+
+// ---------- Cuadros externos (feature cuadros) ----------
+// Brackets públicos, sin dueño, de torneos de terceros. Desacoplados del dominio
+// privado (Tournament/Entry/Match). Identidad por contenido (Academia) o locator
+// (MUR); ver ADR 0003 y docs/PRPs/cuadros-prp.md.
+
+enum ExternalTournamentStatus {
+  LIVE     // presente en la fuente, se sincroniza
+  ARCHIVED // la fuente flipeó a otra etapa → congelado, "finalizado"
+}
+
+enum BracketFormat {
+  BRACKET     // single-elimination (F1)
+  ROUND_ROBIN // grupos/SERIE (F3; la columna existe desde F1 para no migrar después)
+}
+
+// Un torneo/etapa externo. Una fila por identityKey (NO por locator de la fuente).
+model ExternalTournament {
+  id            String                   @id @default(cuid())
+  sourceType    String                   // 'google-sheets-academia' | 'mur-supabase' (String, no enum: adapters sin migración)
+  identityKey   String                   @unique // 'academia-mg:<año>-etapa-<n>' | 'mur:<uuid>'
+  slug          String                   @unique // identificador legible en /cuadros/[torneo], derivado del identityKey
+  name          String                   // nombre a mostrar (de la fuente)
+  startDate     DateTime?
+  status        ExternalTournamentStatus @default(LIVE)
+  lastSyncedAt  DateTime?
+  lastSyncError String?                  // último error de discovery/fuente (null si OK)
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+
+  brackets ExternalBracket[]
+
+  @@index([sourceType])
+  @@index([status])
+}
+
+// El cuadro de una categoría. El draw normalizado va en `data` (JSON). Se renderiza entero.
+model ExternalBracket {
+  id            String        @id @default(cuid())
+  tournamentId  String
+  categoryName  String        // 'SINGLES CABALLEROS - D', ...
+  slug          String        // slug de la categoría dentro del torneo (para la URL)
+  format        BracketFormat @default(BRACKET)
+  data          Json          // NormalizedBracket (src/lib/cuadros/types.ts)
+  rawHash       String        // hash del crudo, para detectar cambios entre syncs
+  rawSnapshot   String        // crudo (CSV/JSON) del último sync, para diagnóstico
+  displayOrder  Int           @default(0)
+  lastSyncError String?       // último error de esta categoría (null si OK); el resto se conserva
+  lastSyncedAt  DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  tournament ExternalTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, slug])
+  @@index([tournamentId])
+}
+
+// Jugador favorito de un usuario DENTRO de los cuadros. Como los nombres del cuadro
+// son strings opacos (no hay link a Player/usuarios), el favorito es por NOMBRE
+// normalizado (nameKey). Resalta cada aparición de ese nombre en /cuadros.
+model FavoritePlayer {
+  id        String   @id @default(cuid())
+  userId    String
+  nameKey   String   // nombre normalizado (clave de match/dedup)
+  name      String   // nombre tal como se marcó (display)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, nameKey])
+  @@index([userId])
 }

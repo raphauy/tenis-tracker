@@ -11,8 +11,10 @@ export default async function proxy(request: NextRequest) {
   const segments = pathname.split('/').filter(Boolean)
   const firstSeg = segments[0]
 
-  // Siempre públicas sin sesión: login y rutas de API (NextAuth).
-  if (pathname === '/login' || firstSeg === 'api') {
+  // Siempre públicas sin sesión: login, rutas de API (NextAuth) y los cuadros
+  // externos (/cuadros/*). `cuadros` está en RESERVED_SLUGS (no es un perfil),
+  // así que sin este short-circuit caería al gate de sesión de abajo.
+  if (pathname === '/login' || firstSeg === 'api' || firstSeg === 'cuadros') {
     return NextResponse.next()
   }
 

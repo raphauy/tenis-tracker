@@ -12,6 +12,7 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   'stats',
   'settings',
   'app',
+  'cuadros',
   'u',
   'p',
   '_next',

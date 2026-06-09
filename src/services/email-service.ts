@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
 import OtpEmail from '@/components/emails/otp-email'
 import CurationEmail from '@/components/emails/curation-email'
+import SyncAlertEmail from '@/components/emails/sync-alert-email'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
@@ -74,5 +75,34 @@ export async function sendCurationDigestEmail(input: SendCurationDigestInput): P
     to,
     subject: `${total} entrada${total === 1 ? '' : 's'} para curar en Tenis Tracker`,
     react: CurationEmail({ venues, categories, tournaments, adminUrl }),
+  })
+}
+
+interface SendSyncAlertInput {
+  to: string[]
+  source: string
+  error: string
+}
+
+// Alerta al superadmin cuando falla el sync de una fuente de cuadros. Se dispara
+// solo en la transición sana→fallida (lo decide el orquestador), no en cada corrida.
+export async function sendSyncAlertEmail(input: SendSyncAlertInput): Promise<void> {
+  const { to, source, error } = input
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`\n[cuadros] sync FALLÓ (${source}): ${error} → ${to.join(', ') || '(sin destinatarios)'}\n`)
+  }
+
+  if (!shouldSendEmails()) return
+  if (to.length === 0) return
+  if (!resend) throw new Error('RESEND_API_KEY no está configurado')
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tenis-tracker.app'
+
+  await resend.emails.send({
+    from: fromAddress(),
+    to,
+    subject: `Falló el sync de cuadros (${source})`,
+    react: SyncAlertEmail({ source, error, adminUrl: `${baseUrl}/admin/cuadros` }),
   })
 }
