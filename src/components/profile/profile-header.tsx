@@ -40,10 +40,7 @@ export function ProfileHeader({
           <h1 className="truncate text-2xl font-semibold tracking-tight">{ownerName}</h1>
           <Link
             href="/cuadros"
-            className={buttonVariants({
-              variant: 'link',
-              className: 'h-auto justify-start px-0 text-sm font-normal',
-            })}
+            className="w-fit text-sm text-primary underline-offset-4 hover:underline"
           >
             Ver cuadros
           </Link>
