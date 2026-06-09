@@ -26,7 +26,7 @@ const fontSerif = Libre_Baskerville({
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const DESCRIPTION =
-  "Llevá el registro de tus partidos de tenis: torneos, rivales y estadísticas. Gratis.";
+  "Seguí tus torneos de tenis: anotá tus partidos y mirá los cuadros con tus jugadores favoritos. Gratis.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),

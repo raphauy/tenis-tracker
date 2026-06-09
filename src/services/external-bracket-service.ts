@@ -161,6 +161,17 @@ export async function listTournaments(): Promise<ExternalTournamentListItem[]> {
   )
 }
 
+// Solo torneos En curso (LIVE, no archivados) — para el acceso destacado de la landing.
+export async function listLiveTournaments(): Promise<ExternalTournamentListItem[]> {
+  return withRetry(() =>
+    prisma.externalTournament.findMany({
+      where: { status: 'LIVE' },
+      orderBy: [{ startDate: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }],
+      include: { _count: { select: { brackets: true } } },
+    })
+  )
+}
+
 export async function getTournamentBySlug(
   slug: string
 ): Promise<ExternalTournamentWithBrackets | null> {
