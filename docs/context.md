@@ -204,13 +204,13 @@ _Código_: `User.email` (nullable) + `User.emailVerifiedAt`.
 _Evitar_: tratarlo como dato de contacto sin más — su rol es ser puerta de auth de emergencia.
 
 **Banner de email**:
-Componente sticky entre header y contenido en toda vista autenticada del **dueño** (`/[slug]/*` con viewer == owner, `/admin/*`). Aparece mientras el usuario no tenga **Email backup** verificado. Dos copys según el estado: "Agregá un email…" (si `email == null`) o "Verificá tu email…" (si `email != null && emailVerifiedAt == null`). Click → dialog inline con input email u OTP, sin sacar al usuario del contexto. **No tiene X ni se snoozea**: persiste hasta cumplirse.
+Componente entre header y contenido en **toda vista con el shell global** (`AppHeader`: landing, `/cuadros/*`, `/[slug]/*`, `/admin/*`) cuando hay sesión. Aparece mientras el usuario no tenga **Email backup** verificado. Dos copys según el estado: "Agregá un email…" (si `email == null`) o "Verificá tu email…" (si `email != null && emailVerifiedAt == null`). Click → dialog inline con input email u OTP, sin sacar al usuario del contexto (también abrible desde links externos, ej. `/notificaciones`). **No tiene X ni se snoozea**: persiste hasta cumplirse.
 
 **Verificación de teléfono**:
 Implícita en el flujo de **Magic-link inverso**: el primer inbound exitoso del usuario marca `User.phoneVerifiedAt`. No hay otra forma de verificar el phone (no se acepta phone tipeado a mano).
 
 **Verificación de email**:
-Diferida y opcional. Se hace por **OTP por email** (vía el `OtpToken` existente, sin canal alternativo) desde el dialog del **Banner de email** o desde Ajustes. Al completarse marca `User.emailVerifiedAt`.
+Diferida y opcional. Se hace por **OTP por email** (vía el `OtpToken` existente, sin canal alternativo) desde el dialog del **Banner de email**. Al completarse marca `User.emailVerifiedAt`. Excepción: si el usuario se registró por **invitación** y en el onboarding deja el mismo email al que viajó el link, el email **nace verificado** (clickear el link tokenizado ya prueba posesión del inbox).
 
 ### Notificaciones de resultados
 

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { WhatsAppIcon } from '@/components/whatsapp-icon'
+import { openEmailBannerDialog } from '@/components/profile/email-banner'
 import type { NotificationSettings } from '@/services/notification-service'
 import { setFavoriteChannelAction, setNotifyModeAction } from './actions'
 
@@ -116,9 +117,20 @@ export function NotificationsForm({
             disabled={!settings.emailVerified}
           />
           <p className="mt-2 text-sm text-muted-foreground">
-            {settings.emailVerified
-              ? EMAIL_MODE_DESCRIPTIONS[emailMode]
-              : 'Verificá tu email para activar este canal.'}
+            {settings.emailVerified ? (
+              EMAIL_MODE_DESCRIPTIONS[emailMode]
+            ) : (
+              <>
+                Verificá tu email para activar este canal.{' '}
+                <button
+                  type="button"
+                  className="text-primary cursor-pointer underline-offset-4 hover:underline"
+                  onClick={openEmailBannerDialog}
+                >
+                  Verificar email
+                </button>
+              </>
+            )}
           </p>
         </div>
 

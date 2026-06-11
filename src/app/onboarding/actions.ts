@@ -8,7 +8,7 @@ import { INVITE_COOKIE } from '@/lib/constants/invitation'
 import { completeOnboardingSchema } from '@/lib/validations/onboarding'
 import { validateSlugFormat } from '@/lib/slug'
 import { getUserByEmail, isSlugTaken, setUserEmail, setUserSlugAndName } from '@/services/user-service'
-import { acceptInvitation } from '@/services/invitation-service'
+import { acceptInvitation, getInvitationByToken } from '@/services/invitation-service'
 
 export type SlugStatus = 'available' | 'taken' | 'reserved' | 'invalid'
 
@@ -53,13 +53,24 @@ export async function completeOnboarding(input: {
         return { success: false, error: 'Ese email ya está usado por otra cuenta' }
       }
     }
+    // Si entró por una invitación del admin y dejó el MISMO email al que viajó el link,
+    // el email nace verificado: clickear el link tokenizado ya prueba posesión del inbox
+    // (mismo nivel de confianza que un magic link). Si tipeó otro, verify diferido normal.
+    const jar = await cookies()
+    const inviteToken = jar.get(INVITE_COOKIE)?.value
+    const invitation = inviteToken ? await getInvitationByToken(inviteToken) : null
+    const validInvitation =
+      invitation && !invitation.acceptedAt && invitation.expiresAt > new Date()
+        ? invitation
+        : null
+    const emailVerifiedByInvite =
+      !!email && !!validInvitation && validInvitation.email.trim().toLowerCase() === email
+
     await setUserSlugAndName(user.id, name, slug)
-    if (email) await setUserEmail(user.id, email)
+    if (email) await setUserEmail(user.id, email, { verified: emailVerifiedByInvite })
     // Si entró por una invitación del admin, marcarla aceptada (best-effort:
     // un fallo acá no debe romper un onboarding que ya se completó).
     try {
-      const jar = await cookies()
-      const inviteToken = jar.get(INVITE_COOKIE)?.value
       if (inviteToken) {
         await acceptInvitation(inviteToken, user.id)
         jar.delete(INVITE_COOKIE)

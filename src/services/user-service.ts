@@ -31,11 +31,20 @@ export async function getProfileBySlug(slug: string) {
   })
 }
 
-// Datos del visitante logueado para alimentar su avatar dropdown (incl. en perfiles ajenos).
+// Datos del visitante logueado para alimentar su avatar dropdown (incl. en perfiles ajenos)
+// y el banner global de email backup (email + emailVerifiedAt).
 export async function getViewerChrome(id: string) {
   return prisma.user.findUnique({
     where: { id },
-    select: { id: true, name: true, email: true, slug: true, image: true, role: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      emailVerifiedAt: true,
+      slug: true,
+      image: true,
+      role: true,
+    },
   })
 }
 
@@ -156,16 +165,30 @@ export async function upsertUserByPhone(phone: string, name?: string | null) {
   })
 }
 
-// Setea/actualiza el email del usuario sin verificarlo (verify diferido vía banner).
-// Permite también poner null para limpiarlo.
-// Si el email no cambia, no toca emailVerifiedAt (evita invalidar verificaciones previas
+// Setea/actualiza el email del usuario, por defecto sin verificar (verify diferido vía
+// banner). Permite también poner null para limpiarlo. Con `verified: true` nace verificado
+// (caso onboarding por invitación: el email coincide con el del link que le llegó).
+// Si el email no cambia, no degrada emailVerifiedAt (evita invalidar verificaciones previas
 // cuando el caller llama defensivamente con el mismo valor).
-export async function setUserEmail(id: string, email: string | null) {
-  const current = await prisma.user.findUnique({ where: { id }, select: { email: true } })
-  if (current && current.email === email) return current
+export async function setUserEmail(
+  id: string,
+  email: string | null,
+  opts?: { verified?: boolean },
+) {
+  const verified = (opts?.verified ?? false) && email !== null
+  const current = await prisma.user.findUnique({
+    where: { id },
+    select: { email: true, emailVerifiedAt: true },
+  })
+  if (current && current.email === email) {
+    if (verified && !current.emailVerifiedAt) {
+      return prisma.user.update({ where: { id }, data: { emailVerifiedAt: new Date() } })
+    }
+    return current
+  }
   return prisma.user.update({
     where: { id },
-    data: { email, emailVerifiedAt: null },
+    data: { email, emailVerifiedAt: verified ? new Date() : null },
   })
 }
 

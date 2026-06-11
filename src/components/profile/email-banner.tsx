@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { AlertTriangleIcon, MailCheckIcon } from 'lucide-react'
 import { toast } from 'sonner'
@@ -35,6 +35,15 @@ import {
 // dialog de éxito post-verificación sobrevive al re-render que oculta el banner al verificar.
 
 export type EmailBannerState = 'no-email' | 'pending-verify'
+
+// Evento global para abrir el dialog del banner desde otros puntos de la página
+// (ej. el link "Verificar email" de /notificaciones). El banner está montado en el
+// shell global (AppHeader) siempre que haya email sin verificar.
+export const EMAIL_BANNER_OPEN_EVENT = 'email-banner:open'
+
+export function openEmailBannerDialog() {
+  window.dispatchEvent(new Event(EMAIL_BANNER_OPEN_EVENT))
+}
 
 type DialogStep = 'add-email' | 'enter-otp'
 
@@ -123,6 +132,16 @@ export function EmailBanner({
     setOpen(false)
     setSuccessOpen(true) // avisa que ya puede recibir por email (no cambia preferencias)
   }
+
+  // Abrir el dialog a pedido de otros componentes (sin deps: openDialog captura
+  // estado fresco en cada render y el listener se re-ata barato).
+  useEffect(() => {
+    function onOpen() {
+      void openDialog()
+    }
+    window.addEventListener(EMAIL_BANNER_OPEN_EVENT, onOpen)
+    return () => window.removeEventListener(EMAIL_BANNER_OPEN_EVENT, onOpen)
+  })
 
   const bannerCopy =
     state === 'no-email'
