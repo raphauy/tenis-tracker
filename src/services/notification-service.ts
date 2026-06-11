@@ -9,6 +9,8 @@ import {
   type NotificationView,
   type NotifyOutcomeKey,
 } from '@/lib/notifications/copy'
+import { collectBracketNameKeys } from '@/lib/cuadros/names'
+import type { NormalizedBracket } from '@/lib/cuadros/types'
 
 // Única capa Prisma de la bandeja de salida (ResultNotification). Orquesta el dispatch de los
 // avisos por email/WhatsApp. Ver docs/PRPs/notificaciones-prp.md § Motor de detección / dispatch.
@@ -339,30 +341,44 @@ export type NotificationSettings = {
   emailMode: User['notifyEmailMode']
   whatsappMode: User['notifyWhatsappMode']
   emailVerified: boolean
-  favorites: { nameKey: string; name: string; notifyEmail: boolean; notifyWhatsapp: boolean }[]
+  // `orphaned`: el favorito ya no figura en ningún cuadro (renombrado/eliminado en la fuente).
+  // Solo informativo en la UI; no afecta el matching ni las notificaciones.
+  favorites: {
+    nameKey: string
+    name: string
+    notifyEmail: boolean
+    notifyWhatsapp: boolean
+    orphaned: boolean
+  }[]
 }
 
 export async function getNotificationSettings(userId: string): Promise<NotificationSettings | null> {
-  const user = await withRetry(() =>
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        notifyEmailMode: true,
-        notifyWhatsappMode: true,
-        emailVerifiedAt: true,
-        favoritePlayers: {
-          orderBy: { name: 'asc' },
-          select: { nameKey: true, name: true, notifyEmail: true, notifyWhatsapp: true },
+  const [user, brackets] = await Promise.all([
+    withRetry(() =>
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          notifyEmailMode: true,
+          notifyWhatsappMode: true,
+          emailVerifiedAt: true,
+          favoritePlayers: {
+            orderBy: { name: 'asc' },
+            select: { nameKey: true, name: true, notifyEmail: true, notifyWhatsapp: true },
+          },
         },
-      },
-    })
-  )
+      })
+    ),
+    withRetry(() => prisma.externalBracket.findMany({ select: { data: true } })),
+  ])
   if (!user) return null
+  // Nombres vigentes en TODOS los cuadros (activos y archivados): los archivados conservan su
+  // data, así que un favorito huérfano solo aparece por renombre/eliminación, no por torneo terminado.
+  const bracketKeys = collectBracketNameKeys(brackets.map((b) => b.data as NormalizedBracket))
   return {
     emailMode: user.notifyEmailMode,
     whatsappMode: user.notifyWhatsappMode,
     emailVerified: !!user.emailVerifiedAt,
-    favorites: user.favoritePlayers,
+    favorites: user.favoritePlayers.map((f) => ({ ...f, orphaned: !bracketKeys.has(f.nameKey) })),
   }
 }
 

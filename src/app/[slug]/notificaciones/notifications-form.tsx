@@ -4,7 +4,7 @@ import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { ArrowRightIcon, MailIcon } from 'lucide-react'
+import { ArrowRightIcon, MailIcon, TriangleAlertIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -199,7 +199,15 @@ export function NotificationsForm({
               <ul className="flex flex-col divide-y">
                 {favorites.map((f) => (
                   <li key={f.nameKey} className={cn(FAV_GRID, 'px-3 py-2.5')}>
-                    <span className="truncate text-sm">{f.name}</span>
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate text-sm">{f.name}</span>
+                      {f.orphaned && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <TriangleAlertIcon className="size-3 shrink-0" />
+                          Ya no aparece en los cuadros
+                        </span>
+                      )}
+                    </span>
                     <span className={cn('flex justify-center', emailColumnOff && 'opacity-40')}>
                       <Switch
                         aria-label={`Avisos por email de ${f.name}`}
