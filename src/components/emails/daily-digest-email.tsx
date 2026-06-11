@@ -12,6 +12,7 @@ import {
 } from '@react-email/components'
 import { EMAIL_COLORS, EMAIL_FONTS, EMAIL_STYLES } from './email-theme'
 import { bracketPath, notificationSummary, type NotificationView } from '@/lib/notifications/copy'
+import { shortCategoryLabel } from '@/lib/cuadros/category-label'
 
 export interface DailyDigestEmailProps {
   items?: NotificationView[]
@@ -85,7 +86,7 @@ export default function DailyDigestEmail({
                     {notificationSummary(n)}
                   </Text>
                   <Text style={{ color: EMAIL_COLORS.textMuted, fontSize: '12px', margin: 0 }}>
-                    {n.tournamentName} · {n.categoryName} ·{' '}
+                    {n.tournamentName} · Categoría {shortCategoryLabel(n.categoryName)} ·{' '}
                     <Link href={`${appUrl}${bracketPath(n)}`} style={{ color: EMAIL_COLORS.info, textDecoration: 'underline' }}>
                       Ver el cuadro
                     </Link>

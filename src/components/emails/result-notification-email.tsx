@@ -17,6 +17,7 @@ import {
   notificationTitle,
   type NotificationView,
 } from '@/lib/notifications/copy'
+import { shortCategoryLabel } from '@/lib/cuadros/category-label'
 
 export interface ResultNotificationEmailProps {
   notification?: NotificationView
@@ -81,7 +82,7 @@ export default function ResultNotificationEmail({
 
               <Section style={EMAIL_STYLES.codeSection}>
                 <Text style={{ color: EMAIL_COLORS.textPrimary, fontSize: '13px', fontWeight: '600', margin: 0, fontFamily: EMAIL_FONTS.sans }}>
-                  {notification.tournamentName} · {notification.categoryName}
+                  {notification.tournamentName} · Categoría {shortCategoryLabel(notification.categoryName)}
                 </Text>
               </Section>
 

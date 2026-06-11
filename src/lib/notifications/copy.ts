@@ -3,6 +3,8 @@
 // template) y el resumen diario. Strings en español con tildes.
 // Ver docs/PRPs/notificaciones-prp.md § Desenlaces.
 
+import { shortCategoryLabel } from '@/lib/cuadros/category-label'
+
 export type NotifyOutcomeKey = 'WON' | 'LOST' | 'CHAMPION' | 'FINALIST'
 
 // Vista renderizable de una notificación, denormalizada (no depende del cuadro vivo).
@@ -23,8 +25,10 @@ export function bracketPath(n: NotificationView): string {
   return `/cuadros/${n.tournamentSlug}/${n.categorySlug}`
 }
 
+// Torneo + categoría corta, como se habla en el día a día ("La Academia MG 2026 — Etapa 3
+// (Categoría B)"). El label corto es el mismo de las pills de /cuadros (shortCategoryLabel).
 function torneoLabel(n: NotificationView): string {
-  return `${n.tournamentName} (${n.categoryName})`
+  return `${n.tournamentName} (Categoría ${shortCategoryLabel(n.categoryName)})`
 }
 
 function safe(value: string | null | undefined, fallback: string): string {
@@ -32,10 +36,20 @@ function safe(value: string | null | undefined, fallback: string): string {
   return v ? v : fallback
 }
 
+// El score se guarda con los sets separados por espacio ("6-2 3-6 10-1"); para mostrarlo
+// los separamos por coma, igual que el cuadro (ver bracket-match § ScoreSets). null si vacío.
+function formatScore(score: string | null | undefined): string | null {
+  const v = score?.trim()
+  return v ? v.split(/\s+/).join(', ') : null
+}
+
 // Frase de una línea con el desenlace. Item del resumen y cuerpo del email inmediato.
 export function notificationSummary(n: NotificationView): string {
-  const score = n.score ? ` (${n.score})` : ''
-  const vs = n.opponentName ? ` a ${n.opponentName}` : ''
+  const fScore = formatScore(n.score)
+  const score = fScore ? ` (${fScore})` : ''
+  // "le ganó a" pero "perdió con": en rioplatense se pierde CON el rival, no A el rival.
+  const vsWon = n.opponentName ? ` a ${n.opponentName}` : ''
+  const vsLost = n.opponentName ? ` con ${n.opponentName}` : ''
   switch (n.outcome) {
     case 'CHAMPION':
       return `${n.playerName} se consagró campeón${score}`
@@ -43,10 +57,10 @@ export function notificationSummary(n: NotificationView): string {
       return `${n.playerName} llegó a la final y quedó como finalista${score}`
     case 'WON': {
       const next = n.nextRoundLabel ? ` y avanza a ${n.nextRoundLabel}` : ' y avanza'
-      return `${n.playerName} ganó en ${n.roundLabel}${vs}${next}${score}`
+      return `${n.playerName} ganó en ${n.roundLabel}${vsWon}${next}${score}`
     }
     case 'LOST':
-      return `${n.playerName} perdió en ${n.roundLabel}${vs} y quedó eliminado${score}`
+      return `${n.playerName} perdió en ${n.roundLabel}${vsLost} y quedó eliminado${score}`
   }
 }
 
@@ -85,7 +99,7 @@ const TEMPLATE_BY_OUTCOME: Record<NotifyOutcomeKey, string> = {
 export function whatsappTemplateSpec(n: NotificationView): WhatsappTemplateSpec {
   const name = TEMPLATE_BY_OUTCOME[n.outcome]
   const torneo = torneoLabel(n)
-  const resultado = safe(n.score, 'sin marcador')
+  const resultado = safe(formatScore(n.score), 'sin marcador')
   switch (n.outcome) {
     case 'WON':
       return {
@@ -121,7 +135,33 @@ export function whatsappTemplateSpec(n: NotificationView): WhatsappTemplateSpec 
   }
 }
 
-// Mensaje de texto libre (in-window, gratis), equivalente al template. Incluye link al cuadro.
+// Mensaje de texto libre (in-window, gratis). Espeja el tono de los templates (emoji + torneo
+// con categoría corta), pero más rico: nombra al rival y cierra con el link al cuadro (en vez
+// del "Seguilo en Tenis Tracker." del template). Omite la línea de resultado si no hay marcador.
 export function whatsappFreeText(n: NotificationView, bracketUrl: string): string {
-  return `${notificationTitle(n)}\n\n${notificationSummary(n)}\n\nVer el cuadro: ${bracketUrl}`
+  const torneo = torneoLabel(n)
+  const fScore = formatScore(n.score)
+  const resultado = (label: string) => (fScore ? `\n${label}: ${fScore}.` : '')
+  const rival = n.opponentName
+  let head: string
+  switch (n.outcome) {
+    case 'WON': {
+      const vs = rival ? ` le ganó a ${rival}` : ' ganó'
+      const next = n.nextRoundLabel ? ` y avanza a ${n.nextRoundLabel}` : ' y avanza'
+      head = `🎾 ${n.playerName}${vs} en ${n.roundLabel} de ${torneo}${next}.${resultado('Resultado')}`
+      break
+    }
+    case 'LOST': {
+      const vs = rival ? ` perdió con ${rival}` : ' perdió'
+      head = `👎 ${n.playerName}${vs} en ${n.roundLabel} de ${torneo} y quedó afuera.${resultado('Resultado')}`
+      break
+    }
+    case 'CHAMPION':
+      head = `🏆 ${n.playerName} se consagró campeón de ${torneo}.${resultado('Resultado de la final')} ¡Felicitaciones!`
+      break
+    case 'FINALIST':
+      head = `🥈 ${n.playerName} llegó a la final de ${torneo} y quedó como finalista.${resultado('Resultado')}`
+      break
+  }
+  return `${head}\n\nVer el cuadro: ${bracketUrl}`
 }
