@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { toast } from 'sonner'
 import { getPostLoginUrl } from '@/lib/auth-redirect'
@@ -42,7 +42,6 @@ function pollIntervalMs(elapsedMs: number): number {
 const POLL_TIMEOUT_MS = 10 * 60 * 1000
 
 export function LoginForm({ invitedName = null }: { invitedName?: string | null }) {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl')
 
@@ -69,20 +68,24 @@ export function LoginForm({ invitedName = null }: { invitedName?: string | null 
 
   const finishWithSignIn = useCallback(
     async (code: string) => {
-      const res = await signIn('whatsapp', { code, redirect: false })
-      if (res?.error) {
+      try {
+        const res = await signIn('whatsapp', { code, redirect: false })
+        if (res?.error) throw new Error(res.error)
+        // Si vino por invitación y ya tenía cuenta, marcarla aceptada (best-effort).
+        await consumeInviteAfterLogin()
+      } catch {
         toast.error('No pudimos completar el login. Probá de nuevo.')
         setStep('idle')
         setWaCode(null)
         setWaStartedAt(null)
         return
       }
-      // Si vino por invitación y ya tenía cuenta, marcarla aceptada (best-effort).
-      await consumeInviteAfterLogin()
-      router.push(callbackUrl || getPostLoginUrl())
-      router.refresh()
+      // Navegación dura, NO router.push + router.refresh: la respuesta de la server
+      // action + el refresh cancelaban la transición del push en pleno commit y la
+      // pantalla quedaba clavada en "Esperando tu mensaje" con la sesión ya creada.
+      window.location.href = callbackUrl || getPostLoginUrl()
     },
-    [callbackUrl, router],
+    [callbackUrl],
   )
 
   useEffect(() => {
@@ -187,8 +190,8 @@ export function LoginForm({ invitedName = null }: { invitedName?: string | null 
       return
     }
     await consumeInviteAfterLogin()
-    router.push(callbackUrl || getPostLoginUrl())
-    router.refresh()
+    // Navegación dura por la misma race que en finishWithSignIn.
+    window.location.href = callbackUrl || getPostLoginUrl()
   }
 
   // --- Render ---------------------------------------------------------------
