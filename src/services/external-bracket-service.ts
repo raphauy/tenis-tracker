@@ -11,6 +11,17 @@ import type { NormalizedBracket } from '@/lib/cuadros/types'
 const COMPLETION_FALLBACK_MS = 30 * 24 * 60 * 60 * 1000
 import { getSuperadminEmails } from '@/services/user-service'
 import { sendSyncAlertEmail } from '@/services/email-service'
+import { normalizeName } from '@/lib/text'
+import { detectNewResults, type DetectedResult } from '@/lib/cuadros/detect-results'
+import { findByNameKeys, type FavoriteForNotification } from '@/services/favorite-service'
+import {
+  dispatchPendingNotifications,
+  effectiveEmailMode,
+  effectiveWhatsappMode,
+  recordResults,
+  type RecordResultInput,
+} from '@/services/notification-service'
+import type { NotifyOutcome } from '@prisma/client'
 
 // Única capa Prisma de la feature cuadros. Los adapters/parsers (src/lib/cuadros/)
 // son puros; acá vive la persistencia y el orquestador del sync.
@@ -210,11 +221,19 @@ export async function getBracketBySlug(tournamentSlug: string, categorySlug: str
       where: { slug: tournamentSlug },
     })
     if (!tournament) return null
-    const bracket = await prisma.externalBracket.findUnique({
-      where: { tournamentId_slug: { tournamentId: tournament.id, slug: categorySlug } },
-    })
+    // `siblings` = todas las categorías del torneo (livianas), para el switcher de la page.
+    const [bracket, siblings] = await Promise.all([
+      prisma.externalBracket.findUnique({
+        where: { tournamentId_slug: { tournamentId: tournament.id, slug: categorySlug } },
+      }),
+      prisma.externalBracket.findMany({
+        where: { tournamentId: tournament.id },
+        select: { slug: true, categoryName: true },
+        orderBy: { displayOrder: 'asc' },
+      }),
+    ])
     if (!bracket) return null
-    return { tournament, bracket }
+    return { tournament, bracket, siblings }
   })
 }
 
@@ -244,6 +263,129 @@ function sha256(s: string): string {
 
 function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
+}
+
+// ---------- Motor de notificaciones (enganchado al sync) ----------
+
+// Snapshot viejo del bracket ANTES del upsert (para diffear) + flag de baseline.
+async function getBracketForSync(tournamentId: string, slug: string) {
+  return withRetry(() =>
+    prisma.externalBracket.findUnique({
+      where: { tournamentId_slug: { tournamentId, slug } },
+      select: { id: true, data: true, rawHash: true, notificationsBaselineAt: true },
+    })
+  )
+}
+
+async function markBracketBaselined(bracketId: string) {
+  return withRetry(() =>
+    prisma.externalBracket.update({
+      where: { id: bracketId },
+      data: { notificationsBaselineAt: new Date() },
+    })
+  )
+}
+
+type DetectContext = {
+  tournamentId: string
+  tournamentName: string
+  tournamentSlug: string
+  categoryName: string
+  categorySlug: string
+}
+
+type ExistingBracket = {
+  id: string
+  data: unknown
+  rawHash: string
+  notificationsBaselineAt: Date | null
+}
+
+// Baseline (cuadro nuevo o preexistente sin baseline) → registrar SIN notificar. Si ya
+// baselined y el crudo cambió → diff old↔new → cruce con favoritos → bandeja. NEW-ONLY.
+async function detectAndRecord(
+  existing: ExistingBracket | null,
+  bracketId: string,
+  newData: NormalizedBracket,
+  newHash: string,
+  ctx: DetectContext
+): Promise<void> {
+  if (!existing || existing.notificationsBaselineAt == null) {
+    await markBracketBaselined(bracketId)
+    return
+  }
+  if (existing.rawHash === newHash) return // sin cambios → nada que detectar
+  const events = detectNewResults(existing.data as NormalizedBracket, newData)
+  if (events.length === 0) return
+
+  const names = new Set<string>()
+  for (const e of events) {
+    names.add(normalizeName(e.winnerName))
+    if (e.loserName) names.add(normalizeName(e.loserName))
+  }
+  const favs = await findByNameKeys([...names])
+  if (favs.length === 0) return
+
+  const byKey = new Map<string, FavoriteForNotification[]>()
+  for (const f of favs) {
+    const list = byKey.get(f.nameKey) ?? []
+    list.push(f)
+    byKey.set(f.nameKey, list)
+  }
+
+  const inputs: RecordResultInput[] = []
+  for (const e of events) {
+    for (const f of byKey.get(normalizeName(e.winnerName)) ?? []) {
+      if (couldDeliver(f)) {
+        inputs.push(buildInput(e, f, 'winner', e.isFinal ? 'CHAMPION' : 'WON', bracketId, ctx))
+      }
+    }
+    if (e.loserName) {
+      for (const f of byKey.get(normalizeName(e.loserName)) ?? []) {
+        if (couldDeliver(f)) {
+          inputs.push(buildInput(e, f, 'loser', e.isFinal ? 'FINALIST' : 'LOST', bracketId, ctx))
+        }
+      }
+    }
+  }
+  await recordResults(inputs)
+}
+
+// ¿Algún canal podría entregar el aviso? (toggle del favorito + modo del dueño). Evita crear
+// filas muertas para "rivales" silenciados o usuarios con todos los canales apagados.
+function couldDeliver(f: FavoriteForNotification): boolean {
+  const emailOk = f.notifyEmail && effectiveEmailMode(f.user) !== 'OFF'
+  const whatsappOk = f.notifyWhatsapp && effectiveWhatsappMode(f.user) !== 'OFF'
+  return emailOk || whatsappOk
+}
+
+function buildInput(
+  e: DetectedResult,
+  f: FavoriteForNotification,
+  role: 'winner' | 'loser',
+  outcome: NotifyOutcome,
+  bracketId: string,
+  ctx: DetectContext
+): RecordResultInput {
+  const isWinner = role === 'winner'
+  return {
+    userId: f.userId,
+    nameKey: f.nameKey,
+    playerName: isWinner ? e.winnerName : (e.loserName ?? f.name),
+    tournamentId: ctx.tournamentId,
+    bracketId,
+    roundIndex: e.roundIndex,
+    matchSlot: e.matchSlot,
+    outcome,
+    tournamentName: ctx.tournamentName,
+    categoryName: ctx.categoryName,
+    roundLabel: e.roundLabel,
+    nextRoundLabel: outcome === 'WON' ? e.nextRoundLabel : null,
+    opponentName: isWinner ? e.loserName : e.winnerName,
+    score: e.score,
+    tournamentSlug: ctx.tournamentSlug,
+    categorySlug: ctx.categorySlug,
+  }
 }
 
 // Sincroniza todas las fuentes. Un fallo de una fuente NO aborta las demás.
@@ -292,10 +434,12 @@ export async function syncExternalBrackets(): Promise<SyncReport> {
               report.skipped++
               continue
             }
-            await upsertBracket(row.id, c.slug, {
+            const existingBracket = await getBracketForSync(row.id, c.slug)
+            const newHash = sha256(res.raw)
+            const bracket = await upsertBracket(row.id, c.slug, {
               categoryName: res.categoryName,
               data: res.normalized,
-              rawHash: sha256(res.raw),
+              rawHash: newHash,
               rawSnapshot: res.raw,
               displayOrder: c.displayOrder,
             })
@@ -303,6 +447,15 @@ export async function syncExternalBrackets(): Promise<SyncReport> {
             report.brackets++
             bracketsBuilt++
             if (!isBracketComplete(res.normalized)) allComplete = false
+
+            // Motor de notificaciones: baseline / diff old↔new → bandeja (NEW-ONLY).
+            await detectAndRecord(existingBracket, bracket.id, res.normalized, newHash, {
+              tournamentId: row.id,
+              tournamentName: row.name,
+              tournamentSlug: row.slug,
+              categoryName: res.categoryName,
+              categorySlug: c.slug,
+            })
           } catch (e) {
             seenSlugs.push(c.slug) // fetch falló (transitorio): conservar el último cuadro bueno
             allComplete = false // sin confirmar todas las finales → no archivar todavía
@@ -344,6 +497,17 @@ export async function syncExternalBrackets(): Promise<SyncReport> {
         }
       }
     }
+  }
+
+  // Dispatch inmediato de los avisos creados en este run. No tumba el sync si falla; los
+  // pendientes/fallidos se reintentan el próximo run (o el digest, para email DIGEST).
+  try {
+    const d = await dispatchPendingNotifications()
+    if (d.sent || d.failed) {
+      console.log(`[notif] dispatch: ${d.sent} enviados, ${d.failed} fallidos, ${d.skipped} omitidos`)
+    }
+  } catch (e) {
+    report.errors.push({ source: 'notificaciones/dispatch', message: errMsg(e) })
   }
 
   return report

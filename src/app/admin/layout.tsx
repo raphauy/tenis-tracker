@@ -1,11 +1,9 @@
-import Link from 'next/link'
 import type { Metadata } from 'next'
 import { auth } from '@/lib/auth'
 import { getEmailStatus, getViewerChrome } from '@/services/user-service'
-import { UserAvatar } from '@/components/user-avatar'
+import { AppHeader } from '@/components/app-header'
 import { AdminNav } from '@/components/admin/admin-nav'
 import { EmailBanner, type EmailBannerState } from '@/components/profile/email-banner'
-import { Logo } from '@/components/logo'
 
 // Cubre todo /admin/*: nunca se indexa.
 export const metadata: Metadata = {
@@ -30,26 +28,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
-      <header className="border-b">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-4">
-          <Link href="/" aria-label="Tenis Tracker">
-            <Logo />
-          </Link>
-          {viewer && (
-            <UserAvatar
-              name={viewer.name}
-              email={viewer.email}
-              image={viewer.image}
-              slug={viewer.slug}
-              role={viewer.role}
-              seed={viewer.id}
-            />
-          )}
-        </div>
-      </header>
+    <div className="flex min-h-full flex-1 flex-col pb-14 md:pb-0">
+      <AppHeader callbackUrl="/admin" />
       <AdminNav />
-      {banner && <EmailBanner state={banner.state} email={banner.email} />}
+      <EmailBanner
+        show={!!banner}
+        state={banner?.state ?? 'no-email'}
+        email={banner?.email ?? null}
+        slug={viewer?.slug ?? null}
+      />
       {children}
     </div>
   )

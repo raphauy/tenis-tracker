@@ -11,8 +11,7 @@ import {
   MoonIcon,
   MonitorIcon,
   UserIcon,
-  HomeIcon,
-  TrophyIcon,
+  BellIcon,
 } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { GeneratedAvatar } from '@/components/generated-avatar'
@@ -80,21 +79,13 @@ export function UserAvatar({ name, email, image, slug, role, seed }: Props) {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem render={<Link href="/" />}>
-          <HomeIcon />
-          Inicio
-        </DropdownMenuItem>
-
-        <DropdownMenuItem render={<Link href="/cuadros" />}>
-          <TrophyIcon />
-          Cuadros
-        </DropdownMenuItem>
-
+        {/* La navegación primaria (Cuadros / Mis torneos) vive en el AppHeader y la
+            bottom nav; este menú queda solo para lo de cuenta. */}
         {slug ? (
           <>
-            <DropdownMenuItem render={<Link href={`/${slug}`} />}>
-              <UserIcon />
-              Mis torneos
+            <DropdownMenuItem render={<Link href={`/${slug}/notificaciones`} />}>
+              <BellIcon />
+              Notificaciones
             </DropdownMenuItem>
             <DropdownMenuItem render={<Link href={`/${slug}/ajustes`} />}>
               <SettingsIcon />

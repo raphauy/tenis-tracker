@@ -54,10 +54,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
       <ProfileHeader
         ownerId={owner.id}
         ownerName={owner.name ?? owner.slug ?? ''}
-        ownerSlug={slug}
         ownerImage={owner.image}
-        isOwner={isOwner}
-        viewer={viewerChrome}
       />
 
       {isPrivate ? (

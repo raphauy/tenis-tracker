@@ -115,6 +115,22 @@ export function isWindowOpen(lastInboundAt: Date | null): boolean {
   return !!lastInboundAt && Date.now() - lastInboundAt.getTime() < WINDOW_MS
 }
 
+// Decide si efectivamente enviar salientes de WhatsApp. Por default se envían. Setear
+// DO_NOT_SEND_WHATSAPP=true desactiva el envío (espejo de DO_NOT_SEND_EMAILS): los mensajes se
+// loguean a consola en no-producción pero NO salen a Kapso/Meta. Útil en dev para no gastar
+// mensajes (marketing) ni depender del número conectado.
+function shouldSendWhatsapp(): boolean {
+  return process.env.DO_NOT_SEND_WHATSAPP !== 'true'
+}
+
+// Loguea el saliente en no-producción (visibilidad en dev, igual que los emails).
+function logOutbound(kind: string, to: string, body: string): void {
+  if (process.env.NODE_ENV !== 'production') {
+    const flag = shouldSendWhatsapp() ? '' : ' [NO ENVIADO]'
+    console.log(`\n[whatsapp] ${kind} → ${to}${flag}\n${body}\n`)
+  }
+}
+
 // Marca mensajes que pertenecen al flujo de auth (Magic-link inverso), para esconderlos
 // del inbox del admin. Ver docs/context.md § "Inbox" y ADR 0002.
 export function isAuthMessage(body: string | null | undefined): boolean {
@@ -188,6 +204,9 @@ export async function getThread(conversationId: string): Promise<WhatsAppMessage
 // Fuera de ventana lanza; si Meta igual rechaza (131047), el SDK lanza con su mensaje.
 export async function sendText(input: { to: string; body: string }): Promise<void> {
   const { to, body } = input
+  logOutbound('text', to, body)
+  if (!shouldSendWhatsapp()) return
+
   const pid = phoneNumberId()
 
   const found = await client().conversations.list({
@@ -202,6 +221,57 @@ export async function sendText(input: { to: string; body: string }): Promise<voi
   }
 
   await client().messages.sendText({ phoneNumberId: pid, to, body })
+}
+
+// ¿Está abierta la ventana de 24h para este teléfono? Lee la conversación en Kapso sin enviar.
+// Para que el dispatch de notificaciones decida entre sendText (gratis, in-window) y
+// sendTemplate (pago). false si no hay conversación (el contacto nunca escribió).
+export async function getWindowOpen(phone: string): Promise<boolean> {
+  const found = await client().conversations.list({
+    phoneNumberId: phoneNumberId(),
+    phoneNumber: digits(phone),
+    limit: 1,
+    fields: buildKapsoFields(CONVERSATION_FIELDS),
+  })
+  return isWindowOpen(parseDate(found.data[0]?.kapso?.lastInboundAt))
+}
+
+export type TemplateNamedParam = { name: string; text: string }
+
+// Envío de un template pre-aprobado (Kapso/Meta), FUERA de la ventana de 24h. Para los avisos
+// proactivos (notificaciones) cuando el contacto no escribió en las últimas 24h. Params NAMED
+// (`parameter_name` en el body component, formato crudo de Meta). Los templates de notificación
+// son MARKETING (se cobran). Ver docs/PRPs/notificaciones-prp.md y templates-reference.md.
+export async function sendTemplate(input: {
+  to: string
+  name: string
+  languageCode?: string
+  bodyParams: TemplateNamedParam[]
+}): Promise<void> {
+  const { to, name, languageCode = 'es', bodyParams } = input
+  logOutbound(`template ${name}`, to, bodyParams.map((p) => `${p.name}=${p.text}`).join(' · '))
+  if (!shouldSendWhatsapp()) return
+
+  await client().messages.sendTemplate({
+    phoneNumberId: phoneNumberId(),
+    to,
+    template: {
+      name,
+      language: { code: languageCode },
+      components: bodyParams.length
+        ? [
+            {
+              type: 'body',
+              parameters: bodyParams.map((p) => ({
+                type: 'text',
+                parameter_name: p.name,
+                text: p.text,
+              })),
+            },
+          ]
+        : undefined,
+    },
+  })
 }
 
 // Rate limit in-memory por phone para sendRejectionFeedback: evita spam si alguien
@@ -230,6 +300,8 @@ export async function sendRejectionFeedback(phone: string): Promise<void> {
     console.log(`[whatsapp] rejection feedback rate-limited for ${phone}`)
     return
   }
+  logOutbound('rejection', phone, WA_REJECTION_MESSAGE)
+  if (!shouldSendWhatsapp()) return
   try {
     await client().messages.sendText({
       phoneNumberId: phoneNumberId(),
@@ -246,6 +318,8 @@ export async function sendRejectionFeedback(phone: string): Promise<void> {
 // sepa que tiene que volver a la pestaña web (donde el polling termina el login).
 // Free-form gratis (ventana abierta por el propio inbound). No bloquea el webhook.
 export async function sendSuccessFeedback(phone: string): Promise<void> {
+  logOutbound('success', phone, WA_SUCCESS_MESSAGE)
+  if (!shouldSendWhatsapp()) return
   try {
     await client().messages.sendText({
       phoneNumberId: phoneNumberId(),

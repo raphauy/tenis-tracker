@@ -11,3 +11,4 @@ El plan ejecutable de cada feature vive en `docs/PRPs/<feature>-prp.md` + `docs/
 - **tenis-tracker** (MVP) — `docs/PRPs/tenis-tracker-prp.md` · `docs/PRPs/tenis-tracker-roadmap.md`
 - **whatsapp-kapso** (auth por WhatsApp + integración Kapso; piloto pre-OnMind) — `docs/PRPs/whatsapp-kapso-prp.md` · `docs/PRPs/whatsapp-kapso-roadmap.md`
 - **cuadros** (cuadros públicos de torneos externos en `/cuadros`; fuentes extensibles: Academia MG + AUT/MUR) — `docs/PRPs/cuadros-prp.md` · `docs/PRPs/cuadros-roadmap.md`
+- **notificaciones** (avisos por email + WhatsApp de resultados de jugadores favoritos; configurable por canal y por favorito) — `docs/PRPs/notificaciones-prp.md` · `docs/PRPs/notificaciones-roadmap.md`

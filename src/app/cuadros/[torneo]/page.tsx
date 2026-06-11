@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronRightIcon } from 'lucide-react'
+import { ChevronRightIcon, TrophyIcon } from 'lucide-react'
 import { getTournamentBySlug } from '@/services/external-bracket-service'
+import { bracketProgress } from '@/lib/cuadros/bracket-status'
+import type { NormalizedBracket } from '@/lib/cuadros/types'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
@@ -17,6 +19,29 @@ export async function generateMetadata({
   const t = await getTournamentBySlug(torneo)
   if (!t) return { title: 'Cuadro no encontrado', robots: { index: false, follow: false } }
   return { title: t.name, alternates: { canonical: `/cuadros/${t.slug}` } }
+}
+
+// Línea de estado de la categoría: campeón si la final está jugada; si no, la ronda
+// más avanzada con partidos (solo en torneos vivos: en uno archivado a medio jugar,
+// "En curso" mentiría).
+function CategoryStatus({ data, live }: { data: NormalizedBracket; live: boolean }) {
+  const progress = bracketProgress(data)
+  if (progress.state === 'champion') {
+    return (
+      <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+        <TrophyIcon aria-hidden className="size-3.5 text-primary" />
+        Campeón: <span className="font-medium text-foreground">{progress.championName}</span>
+      </p>
+    )
+  }
+  if (!live) return null
+  return (
+    <p className="mt-1 text-xs text-muted-foreground">
+      {progress.state === 'in-progress'
+        ? `En curso · ${progress.roundLabel}`
+        : 'Sin partidos jugados todavía'}
+    </p>
+  )
 }
 
 export default async function TorneoPage({ params }: { params: Promise<{ torneo: string }> }) {
@@ -46,7 +71,13 @@ export default async function TorneoPage({ params }: { params: Promise<{ torneo:
             <li key={b.id}>
               <Link href={`/cuadros/${t.slug}/${b.slug}`} className="block">
                 <Card className="flex-row items-center justify-between gap-3 px-4 py-4 transition-colors hover:bg-muted/40">
-                  <span className="font-medium">{b.categoryName}</span>
+                  <div className="min-w-0">
+                    <span className="font-medium">{b.categoryName}</span>
+                    <CategoryStatus
+                      data={b.data as unknown as NormalizedBracket}
+                      live={t.status === 'LIVE'}
+                    />
+                  </div>
                   <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
                 </Card>
               </Link>

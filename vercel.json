@@ -6,7 +6,11 @@
     },
     {
       "path": "/api/cron/sync-cuadros",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 0-3,11-23 * * *"
+    },
+    {
+      "path": "/api/cron/notificaciones-digest",
+      "schedule": "0 11 * * *"
     }
   ]
 }

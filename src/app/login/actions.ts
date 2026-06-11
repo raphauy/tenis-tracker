@@ -1,11 +1,15 @@
 'use server'
 
-import { getUserByEmail } from '@/services/user-service'
+import { cookies } from 'next/headers'
+import { getUserByEmail, getUserAccessInfo } from '@/services/user-service'
 import { generateOtp, createOtpToken, OTP_EXPIRY_MINUTES } from '@/services/auth-service'
 import { sendOtpEmail } from '@/services/email-service'
 import { createPendingAuth } from '@/services/pending-auth-service'
+import { acceptInvitation } from '@/services/invitation-service'
 import { emailSchema } from '@/lib/validations/auth'
 import { WA_LOGIN_PREFIX } from '@/lib/constants/auth'
+import { INVITE_COOKIE } from '@/lib/constants/invitation'
+import { requireUser } from '@/lib/auth-helpers'
 import type { ActionResult } from '@/lib/types'
 
 // Email backup (Fase 2): no crea usuarios — solo loguea a quienes ya verificaron email
@@ -32,6 +36,26 @@ export async function requestOtpAction(email: string): Promise<ActionResult> {
   } catch (error) {
     console.error('requestOtpAction error:', error)
     return { success: false, error: GENERIC_BACKUP_ERROR }
+  }
+}
+
+// Post-login con cookie de invitación: si el usuario YA tenía cuenta (slug puesto),
+// la invitación se da por aceptada acá — no va a pasar por el onboarding, que es
+// donde se marca para los usuarios nuevos. Best-effort: nunca rompe el login.
+export async function consumeInviteAfterLogin(): Promise<void> {
+  try {
+    const jar = await cookies()
+    const token = jar.get(INVITE_COOKIE)?.value
+    if (!token) return
+    const user = await requireUser()
+    const info = await getUserAccessInfo(user.id)
+    if (info?.slug) {
+      await acceptInvitation(token, user.id)
+      jar.delete(INVITE_COOKIE)
+    }
+    // Sin slug: usuario nuevo → la cookie sigue viva para el onboarding (prefill + accept).
+  } catch {
+    // best-effort
   }
 }
 

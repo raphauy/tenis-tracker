@@ -28,14 +28,23 @@ const MESSAGES: Record<Exclude<Status, 'idle'>, string> = {
   invalid: 'Entre 3 y 30 caracteres: letras, números y guiones',
 }
 
-export function OnboardingForm({ initialName, appHost }: { initialName: string; appHost: string }) {
+export function OnboardingForm({
+  initialName,
+  initialEmail = '',
+  appHost,
+}: {
+  initialName: string
+  // Prefill desde una invitación del admin (cookie de /invitacion/[token]).
+  initialEmail?: string
+  appHost: string
+}) {
   const router = useRouter()
   const [name, setName] = React.useState(initialName)
   const [slug, setSlug] = React.useState(() => slugify(initialName))
   const [slugTouched, setSlugTouched] = React.useState(false)
   const [status, setStatus] = React.useState<Status>('idle')
   const [submitting, setSubmitting] = React.useState(false)
-  const [email, setEmail] = React.useState('')
+  const [email, setEmail] = React.useState(initialEmail)
 
   const latestSlug = React.useRef(slug)
   React.useEffect(() => {

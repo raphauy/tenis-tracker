@@ -1,15 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertTriangleIcon } from 'lucide-react'
+import Link from 'next/link'
+import { AlertTriangleIcon, MailCheckIcon } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -27,19 +30,27 @@ import {
 // Banner persistente del Email backup (Fase 2 whatsapp-kapso). Aparece en toda vista del
 // dueño hasta que `User.emailVerifiedAt != null`. No tiene X — la única salida es agregar
 // y verificar el email. Ver docs/context.md § "Banner de email" y ADR 0002.
+//
+// El componente se monta SIEMPRE (no condicional): `show` controla el banner visible. Así el
+// dialog de éxito post-verificación sobrevive al re-render que oculta el banner al verificar.
 
 export type EmailBannerState = 'no-email' | 'pending-verify'
 
 type DialogStep = 'add-email' | 'enter-otp'
 
 export function EmailBanner({
+  show,
   state,
   email,
+  slug,
 }: {
+  show: boolean
   state: EmailBannerState
   email?: string | null
+  slug?: string | null
 }) {
   const [open, setOpen] = useState(false)
+  const [successOpen, setSuccessOpen] = useState(false)
   const [step, setStep] = useState<DialogStep>('add-email')
   const [emailInput, setEmailInput] = useState(email ?? '')
   const [pendingEmail, setPendingEmail] = useState(email ?? '')
@@ -110,6 +121,7 @@ export function EmailBanner({
     }
     toast.success('Email verificado.')
     setOpen(false)
+    setSuccessOpen(true) // avisa que ya puede recibir por email (no cambia preferencias)
   }
 
   const bannerCopy =
@@ -121,22 +133,24 @@ export function EmailBanner({
 
   return (
     <>
-      <div className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40 border-b">
-        <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-3 px-6 py-2.5 text-sm">
-          <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
-            <AlertTriangleIcon className="size-4 shrink-0" />
-            <span>{bannerCopy}</span>
+      {show && (
+        <div className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40 border-b">
+          <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-3 px-6 py-2.5 text-sm">
+            <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
+              <AlertTriangleIcon className="size-4 shrink-0" />
+              <span>{bannerCopy}</span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-amber-300 dark:border-amber-800"
+              onClick={openDialog}
+            >
+              {buttonLabel}
+            </Button>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-amber-300 dark:border-amber-800"
-            onClick={openDialog}
-          >
-            {buttonLabel}
-          </Button>
         </div>
-      </div>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
@@ -213,6 +227,32 @@ export function EmailBanner({
               </Button>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Éxito post-verificación: avisa que ya puede recibir por email. NO cambia preferencias. */}
+      <Dialog open={successOpen} onOpenChange={setSuccessOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MailCheckIcon className="size-5 text-emerald-600" />
+              ¡Email verificado!
+            </DialogTitle>
+            <DialogDescription>
+              Ya podés recibir los resultados de tus favoritos por email, con un resumen diario.
+              Activá el canal y elegí cómo querés que te avisemos.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Ahora no</DialogClose>
+            {slug ? (
+              <DialogClose
+                render={<Link href={`/${slug}/notificaciones`} className={buttonVariants()} />}
+              >
+                Configurar notificaciones
+              </DialogClose>
+            ) : null}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

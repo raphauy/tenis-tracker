@@ -22,7 +22,7 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from '@/components/ui/input-otp'
-import { requestOtpAction, requestWaLoginAction } from './actions'
+import { consumeInviteAfterLogin, requestOtpAction, requestWaLoginAction } from './actions'
 import type { WaAuthStatus } from '@/app/api/auth/wa/status/route'
 
 // Estados del form:
@@ -41,7 +41,7 @@ function pollIntervalMs(elapsedMs: number): number {
 
 const POLL_TIMEOUT_MS = 10 * 60 * 1000
 
-export function LoginForm() {
+export function LoginForm({ invitedName = null }: { invitedName?: string | null }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl')
@@ -77,6 +77,8 @@ export function LoginForm() {
         setWaStartedAt(null)
         return
       }
+      // Si vino por invitación y ya tenía cuenta, marcarla aceptada (best-effort).
+      await consumeInviteAfterLogin()
       router.push(callbackUrl || getPostLoginUrl())
       router.refresh()
     },
@@ -184,6 +186,7 @@ export function LoginForm() {
       setOtp('')
       return
     }
+    await consumeInviteAfterLogin()
     router.push(callbackUrl || getPostLoginUrl())
     router.refresh()
   }
@@ -194,9 +197,13 @@ export function LoginForm() {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-center text-2xl font-bold">Iniciá sesión</CardTitle>
+          <CardTitle className="text-center text-2xl font-bold">
+            {invitedName ? 'Creá tu cuenta' : 'Iniciá sesión'}
+          </CardTitle>
           <CardDescription className="text-center">
-            Usamos WhatsApp como puerta principal. Sin contraseña.
+            {invitedName
+              ? `${invitedName}, tu cuenta se crea con WhatsApp: mandás un mensaje y listo. Sin contraseña.`
+              : 'Usamos WhatsApp como puerta principal. Sin contraseña.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -208,16 +215,20 @@ export function LoginForm() {
           >
             {isLoading ? 'Generando…' : 'Continuar con WhatsApp'}
           </Button>
-          <div className="text-center">
-            <button
-              type="button"
-              className="text-muted-foreground hover:text-foreground cursor-pointer text-sm underline-offset-2 hover:underline"
-              onClick={() => setStep('email-input')}
-              disabled={isLoading}
-            >
-              No puedo usar WhatsApp ahora
-            </button>
-          </div>
+          {/* Invitado nuevo: sin el link a email — solo loguea cuentas existentes
+              con email verificado, sería un camino que termina en error. */}
+          {!invitedName && (
+            <div className="text-center">
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground cursor-pointer text-sm underline-offset-2 hover:underline"
+                onClick={() => setStep('email-input')}
+                disabled={isLoading}
+              >
+                No puedo usar WhatsApp ahora
+              </button>
+            </div>
+          )}
         </CardContent>
       </Card>
     )

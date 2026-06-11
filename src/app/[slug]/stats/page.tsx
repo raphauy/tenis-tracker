@@ -51,10 +51,7 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
       <ProfileHeader
         ownerId={owner.id}
         ownerName={owner.name ?? owner.slug ?? ''}
-        ownerSlug={slug}
         ownerImage={owner.image}
-        isOwner={isOwner}
-        viewer={viewerChrome}
       />
 
       {isPrivate ? (

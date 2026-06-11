@@ -61,27 +61,35 @@ enum MatchSide {
 // ---------- Usuarios / auth ----------
 
 model User {
-  id              String     @id @default(cuid())
+  id                     String             @id @default(cuid())
   // Phone es la identidad primaria de auth (Magic-link inverso por WhatsApp, Fase 2).
   // Se setea al primer inbound exitoso o por seed; verifiedAt va junto.
-  phone           String     @unique
-  phoneVerifiedAt DateTime?
+  phone                  String             @unique
+  phoneVerifiedAt        DateTime?
   // Email es opcional, rol de backup verificado para login cuando WhatsApp falla.
-  email           String?    @unique
-  emailVerifiedAt DateTime?
-  name            String?
-  slug            String?    @unique // URL pública del jugador; se elige en el onboarding y queda fija
-  visibility      Visibility @default(PUBLIC)
-  image           String?    // URL del avatar (Vercel Blob)
-  role            UserRole   @default(USER)
-  isActive        Boolean    @default(true)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  email                  String?            @unique
+  emailVerifiedAt        DateTime?
+  name                   String?
+  slug                   String?            @unique // URL pública del jugador; se elige en el onboarding y queda fija
+  visibility             Visibility         @default(PUBLIC)
+  image                  String? // URL del avatar (Vercel Blob)
+  role                   UserRole           @default(USER)
+  isActive               Boolean            @default(true)
+  // Preferencias de notificación (feature notificaciones). Defaults frozen: el user nace
+  // phone-first (sin email) → WhatsApp inmediato, email off. No se auto-cambian al verificar email.
+  notifyEmailMode        EmailNotifyMode    @default(OFF)
+  notifyWhatsappMode     WhatsappNotifyMode @default(IMMEDIATE)
+  notifyNudgeDismissedAt DateTime? // el dueño cerró el nudge de notificaciones (persistente)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 
-  entries         Entry[]
-  otpTokens       OtpToken[]
-  pendingAuths    PendingAuth[]    @relation("UserPendingAuths")
-  favoritePlayers FavoritePlayer[]
+  entries             Entry[]
+  otpTokens           OtpToken[]
+  pendingAuths        PendingAuth[]        @relation("UserPendingAuths")
+  favoritePlayers     FavoritePlayer[]
+  resultNotifications ResultNotification[]
+  sentInvitations     Invitation[]         @relation("InvitationInvitedBy")
+  acceptedInvitations Invitation[]         @relation("InvitationAcceptedUser")
 
   createdVenues      Venue[]      @relation("VenueCreatedBy")
   createdCategories  Category[]   @relation("CategoryCreatedBy")
@@ -112,16 +120,40 @@ model OtpToken {
 model PendingAuth {
   id             String    @id @default(cuid())
   code           String    @unique // 6 chars del charset [A-HJ-NP-Z2-9]
-  expiresAt      DateTime           // ~10 min desde createdAt
-  consumedAt     DateTime?          // set al primer match exitoso del webhook
-  rejectedReason String?            // 'CODE_EXPIRED' | 'CODE_INVALID' | 'CODE_CONSUMED'
-  resolvedPhone  String?            // E.164 del inbound matcheado (auditoría)
-  resolvedUserId String?            // user logueado/creado tras match exitoso
+  expiresAt      DateTime // ~10 min desde createdAt
+  consumedAt     DateTime? // set al primer match exitoso del webhook
+  rejectedReason String? // 'CODE_EXPIRED' | 'CODE_INVALID' | 'CODE_CONSUMED'
+  resolvedPhone  String? // E.164 del inbound matcheado (auditoría)
+  resolvedUserId String? // user logueado/creado tras match exitoso
   createdAt      DateTime  @default(now())
 
   resolvedUser User? @relation("UserPendingAuths", fields: [resolvedUserId], references: [id], onDelete: SetNull)
 
   @@index([expiresAt])
+}
+
+// Invitación por email a un potencial usuario (la envía el superadmin desde /admin/usuarios).
+// El invitado entra por /invitacion/[token]; como el registro es por WhatsApp (no por email),
+// "aceptada" = completó el onboarding habiendo entrado por el link (cookie), o ya tenía
+// cuenta activa al abrirlo. acceptedUserId vincula al usuario resultante.
+model Invitation {
+  id             String    @id @default(cuid())
+  email          String
+  name           String
+  token          String    @unique // viaja en la URL del email; se rota al reenviar
+  expiresAt      DateTime // 7 días desde el (re)envío
+  acceptedAt     DateTime?
+  invitedById    String
+  acceptedUserId String?
+  lastSentAt     DateTime  @default(now()) // último envío del email (creación o reenvío)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  invitedBy    User  @relation("InvitationInvitedBy", fields: [invitedById], references: [id])
+  acceptedUser User? @relation("InvitationAcceptedUser", fields: [acceptedUserId], references: [id], onDelete: SetNull)
+
+  @@index([email])
+  @@index([acceptedAt])
 }
 
 // ---------- Catálogo compartido ----------
@@ -239,26 +271,26 @@ model Match {
 // (MUR); ver ADR 0003 y docs/PRPs/cuadros-prp.md.
 
 enum ExternalTournamentStatus {
-  LIVE     // presente en la fuente, se sincroniza
+  LIVE // presente en la fuente, se sincroniza
   ARCHIVED // la fuente flipeó a otra etapa → congelado, "finalizado"
 }
 
 enum BracketFormat {
-  BRACKET     // single-elimination (F1)
+  BRACKET // single-elimination (F1)
   ROUND_ROBIN // grupos/SERIE (F3; la columna existe desde F1 para no migrar después)
 }
 
 // Un torneo/etapa externo. Una fila por identityKey (NO por locator de la fuente).
 model ExternalTournament {
   id            String                   @id @default(cuid())
-  sourceType    String                   // 'google-sheets-academia' | 'mur-supabase' (String, no enum: adapters sin migración)
+  sourceType    String // 'google-sheets-academia' | 'mur-supabase' (String, no enum: adapters sin migración)
   identityKey   String                   @unique // 'academia-mg:<año>-etapa-<n>' | 'mur:<uuid>'
   slug          String                   @unique // identificador legible en /cuadros/[torneo], derivado del identityKey
-  name          String                   // nombre a mostrar (de la fuente)
+  name          String // nombre a mostrar (de la fuente)
   startDate     DateTime?
   status        ExternalTournamentStatus @default(LIVE)
   lastSyncedAt  DateTime?
-  lastSyncError String?                  // último error de discovery/fuente (null si OK)
+  lastSyncError String? // último error de discovery/fuente (null si OK)
   createdAt     DateTime                 @default(now())
   updatedAt     DateTime                 @updatedAt
 
@@ -270,19 +302,22 @@ model ExternalTournament {
 
 // El cuadro de una categoría. El draw normalizado va en `data` (JSON). Se renderiza entero.
 model ExternalBracket {
-  id            String        @id @default(cuid())
-  tournamentId  String
-  categoryName  String        // 'SINGLES CABALLEROS - D', ...
-  slug          String        // slug de la categoría dentro del torneo (para la URL)
-  format        BracketFormat @default(BRACKET)
-  data          Json          // NormalizedBracket (src/lib/cuadros/types.ts)
-  rawHash       String        // hash del crudo, para detectar cambios entre syncs
-  rawSnapshot   String        // crudo (CSV/JSON) del último sync, para diagnóstico
-  displayOrder  Int           @default(0)
-  lastSyncError String?       // último error de esta categoría (null si OK); el resto se conserva
-  lastSyncedAt  DateTime      @default(now())
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                      String        @id @default(cuid())
+  tournamentId            String
+  categoryName            String // 'SINGLES CABALLEROS - D', ...
+  slug                    String // slug de la categoría dentro del torneo (para la URL)
+  format                  BracketFormat @default(BRACKET)
+  data                    Json // NormalizedBracket (src/lib/cuadros/types.ts)
+  rawHash                 String // hash del crudo, para detectar cambios entre syncs
+  rawSnapshot             String // crudo (CSV/JSON) del último sync, para diagnóstico
+  displayOrder            Int           @default(0)
+  lastSyncError           String? // último error de esta categoría (null si OK); el resto se conserva
+  lastSyncedAt            DateTime      @default(now())
+  // Baseline del motor de notificaciones (feature notificaciones): null = el motor nunca vio este
+  // bracket → el primer sync lo registra SIN notificar (evita storm con cuadros preexistentes).
+  notificationsBaselineAt DateTime?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
 
   tournament ExternalTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
@@ -294,14 +329,91 @@ model ExternalBracket {
 // son strings opacos (no hay link a Player/usuarios), el favorito es por NOMBRE
 // normalizado (nameKey). Resalta cada aparición de ese nombre en /cuadros.
 model FavoritePlayer {
-  id        String   @id @default(cuid())
-  userId    String
-  nameKey   String   // nombre normalizado (clave de match/dedup)
-  name      String   // nombre tal como se marcó (display)
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  userId         String
+  nameKey        String // nombre normalizado (clave de match/dedup)
+  name           String // nombre tal como se marcó (display)
+  // Toggles de notificación por canal. Silenciar ≠ quitar de favoritos (sigue resaltado en /cuadros).
+  notifyEmail    Boolean  @default(true)
+  notifyWhatsapp Boolean  @default(true)
+  createdAt      DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, nameKey])
   @@index([userId])
+}
+
+// ---------- Notificaciones de resultados (feature notificaciones) ----------
+// Avisar al dueño de un Favorito cuando ese nombre registra un resultado nuevo en un
+// cuadro externo, por email y/o WhatsApp. Diseño en docs/PRPs/notificaciones-prp.md.
+
+enum EmailNotifyMode {
+  OFF
+  IMMEDIATE
+  DIGEST
+}
+
+enum WhatsappNotifyMode {
+  OFF
+  IMMEDIATE
+}
+
+enum NotifyOutcome {
+  WON // ganó y avanza
+  LOST // perdió y queda afuera
+  CHAMPION // ganó la final
+  FINALIST // perdió la final
+}
+
+enum NotifyChannelStatus {
+  PENDING
+  SENT
+  SKIPPED
+  FAILED
+}
+
+// Bandeja de salida: una fila por (favorito, partido) detectado. Self-contained (datos
+// denormalizados) para sobrevivir a cambios del cuadro y armar el resumen sin re-leer el
+// bracket. Idempotencia/dedup por la unique key. Sin FK a torneo/bracket: las notificaciones
+// son históricas y sobreviven a deleteMissingBrackets / archivado.
+model ResultNotification {
+  id         String @id @default(cuid())
+  userId     String
+  nameKey    String // favorito que matcheó (normalizado)
+  playerName String // display name del slot al detectar
+
+  // Identidad estable del partido (dedup). bracketId/tournamentId como String (sin FK).
+  tournamentId String
+  bracketId    String
+  roundIndex   Int
+  matchSlot    Int
+  outcome      NotifyOutcome
+
+  // Denormalizado para render (email/WhatsApp), inmune a cambios posteriores del cuadro.
+  tournamentName String
+  categoryName   String
+  roundLabel     String
+  nextRoundLabel String? // solo WON
+  opponentName   String?
+  score          String?
+  tournamentSlug String // para linkear al cuadro
+  categorySlug   String
+
+  detectedAt DateTime @default(now())
+
+  // Estado por canal (independientes). attempts → reintentos hasta 3, luego terminal.
+  emailStatus      NotifyChannelStatus @default(PENDING)
+  emailSentAt      DateTime?
+  emailAttempts    Int                 @default(0)
+  whatsappStatus   NotifyChannelStatus @default(PENDING)
+  whatsappSentAt   DateTime?
+  whatsappAttempts Int                 @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bracketId, roundIndex, matchSlot, nameKey]) // dedup / idempotencia
+  @@index([userId, detectedAt])
+  @@index([emailStatus])
+  @@index([whatsappStatus])
 }

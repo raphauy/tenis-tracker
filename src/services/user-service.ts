@@ -63,6 +63,37 @@ export async function updateUserProfile(
   return prisma.user.update({ where: { id }, data })
 }
 
+// Listado completo para /admin/usuarios. Expone phone/email: SOLO consumo del superadmin.
+export type UserAdmin = Awaited<ReturnType<typeof getUsersAdmin>>[number]
+
+export async function getUsersAdmin() {
+  const users = await prisma.user.findMany({
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      phone: true,
+      phoneVerifiedAt: true,
+      email: true,
+      emailVerifiedAt: true,
+      image: true,
+      role: true,
+      isActive: true,
+      visibility: true,
+      notifyEmailMode: true,
+      notifyWhatsappMode: true,
+      createdAt: true,
+      _count: { select: { entries: true, favoritePlayers: true } },
+    },
+  })
+  return users.map(({ _count, ...u }) => ({
+    ...u,
+    entryCount: _count.entries,
+    favoriteCount: _count.favoritePlayers,
+  }))
+}
+
 // Emails de los superadmin activos: destinatarios de la notificación de curado.
 // Desde Fase 2 el email es opcional; filtramos los que no lo tienen seteado.
 export async function getSuperadminEmails(): Promise<string[]> {

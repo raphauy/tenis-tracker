@@ -11,7 +11,7 @@ import { TimelinePreview } from '@/components/landing/timeline-preview'
 import { BracketPreview } from '@/components/landing/bracket-preview'
 import { CtaActions } from '@/components/landing/cta-actions'
 import { LogoStacked } from '@/components/logo'
-import { AccountMenu } from '@/components/account-menu'
+import { AppHeader } from '@/components/app-header'
 import { Card } from '@/components/ui/card'
 import { auth } from '@/lib/auth'
 import { getViewerChrome } from '@/services/user-service'
@@ -55,10 +55,8 @@ export default async function Home() {
   }
 
   return (
-    <>
-      <header className="mx-auto flex w-full max-w-2xl items-center justify-end px-6 pt-6">
-        <AccountMenu callbackUrl="/" />
-      </header>
+    <div className="flex min-h-full flex-1 flex-col pb-14 md:pb-0">
+      <AppHeader callbackUrl="/" />
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-16 px-6 pb-16 pt-10 sm:gap-20 sm:pb-24 sm:pt-12">
         {/* Hero */}
       <section className="flex flex-col items-center gap-6 text-center">
@@ -176,6 +174,6 @@ export default async function Home() {
         <CtaActions loggedInHref={loggedInHref} />
       </section>
       </main>
-    </>
+    </div>
   )
 }

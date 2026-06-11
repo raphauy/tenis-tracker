@@ -1,11 +1,14 @@
 'use server'
 
+import { cookies } from 'next/headers'
 import { Prisma } from '@prisma/client'
 import type { ActionResult } from '@/lib/types'
 import { requireUser } from '@/lib/auth-helpers'
+import { INVITE_COOKIE } from '@/lib/constants/invitation'
 import { completeOnboardingSchema } from '@/lib/validations/onboarding'
 import { validateSlugFormat } from '@/lib/slug'
 import { getUserByEmail, isSlugTaken, setUserEmail, setUserSlugAndName } from '@/services/user-service'
+import { acceptInvitation } from '@/services/invitation-service'
 
 export type SlugStatus = 'available' | 'taken' | 'reserved' | 'invalid'
 
@@ -52,6 +55,18 @@ export async function completeOnboarding(input: {
     }
     await setUserSlugAndName(user.id, name, slug)
     if (email) await setUserEmail(user.id, email)
+    // Si entró por una invitación del admin, marcarla aceptada (best-effort:
+    // un fallo acá no debe romper un onboarding que ya se completó).
+    try {
+      const jar = await cookies()
+      const inviteToken = jar.get(INVITE_COOKIE)?.value
+      if (inviteToken) {
+        await acceptInvitation(inviteToken, user.id)
+        jar.delete(INVITE_COOKIE)
+      }
+    } catch {
+      // best-effort
+    }
     return { success: true, data: { slug } }
   } catch (error) {
     // Race del live-check: dos requests con el mismo slug → unique violation.

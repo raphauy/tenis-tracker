@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client'
+import type { EmailNotifyMode, WhatsappNotifyMode } from '@prisma/client'
 import { prisma, withRetry } from '@/lib/prisma'
 import { normalizeName } from '@/lib/text'
 
@@ -11,6 +12,42 @@ export async function getFavoriteKeys(userId: string): Promise<string[]> {
     prisma.favoritePlayer.findMany({ where: { userId }, select: { nameKey: true } })
   )
   return rows.map((r) => r.nameKey)
+}
+
+export type FavoriteForNotification = {
+  userId: string
+  nameKey: string
+  name: string
+  notifyEmail: boolean
+  notifyWhatsapp: boolean
+  // Modos del dueño, para decidir en el motor si algún canal podría entregar (evita filas muertas).
+  user: {
+    emailVerifiedAt: Date | null
+    notifyEmailMode: EmailNotifyMode
+    notifyWhatsappMode: WhatsappNotifyMode
+  }
+}
+
+// Favoritos de TODOS los users cuyo nameKey está en la lista. Para el cruce del motor de
+// notificaciones: los nombres que registraron un resultado nuevo en el sync → quién los sigue,
+// con qué canales activos (toggles del favorito) y los modos del dueño.
+export async function findByNameKeys(nameKeys: string[]): Promise<FavoriteForNotification[]> {
+  if (nameKeys.length === 0) return []
+  return withRetry(() =>
+    prisma.favoritePlayer.findMany({
+      where: { nameKey: { in: nameKeys } },
+      select: {
+        userId: true,
+        nameKey: true,
+        name: true,
+        notifyEmail: true,
+        notifyWhatsapp: true,
+        user: {
+          select: { emailVerifiedAt: true, notifyEmailMode: true, notifyWhatsappMode: true },
+        },
+      },
+    })
+  )
 }
 
 // Toggle: si ya es favorito lo quita (devuelve false), si no lo agrega (devuelve true).

@@ -11,6 +11,8 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   'onboarding',
   'stats',
   'settings',
+  'invitacion',
+  'invite',
   'app',
   'cuadros',
   'u',

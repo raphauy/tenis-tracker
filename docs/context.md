@@ -211,3 +211,21 @@ Implícita en el flujo de **Magic-link inverso**: el primer inbound exitoso del 
 
 **Verificación de email**:
 Diferida y opcional. Se hace por **OTP por email** (vía el `OtpToken` existente, sin canal alternativo) desde el dialog del **Banner de email** o desde Ajustes. Al completarse marca `User.emailVerifiedAt`.
+
+### Notificaciones de resultados
+
+Términos de la feature **notificaciones**: avisar al dueño de un **Favorito** cuando ese nombre registra un resultado nuevo en un **Cuadro externo**. Canales: email y WhatsApp. Diseño en `docs/PRPs/notificaciones-prp.md`.
+
+**Seguir**:
+Alias de **Favorito** (`FavoritePlayer`). "Seguir un jugador" = marcarlo favorito en `/cuadros`. No es entidad ni concepto nuevo.
+_Evitar_: usar "seguir" como algo distinto de favorito.
+
+**Notificación de resultado**:
+Aviso que recibe el **dueño de un Favorito** cuando ese nombre pasa a tener un **resultado nuevo** (un partido que pasó a jugado) en un cuadro externo. Se dispara desde el sync. NO incluye los partidos propios del usuario (esa es su carrera privada) ni los **BYE**.
+
+**Favorito notificable / silenciado**:
+Un Favorito puede estar **notificable** o **silenciado** _por canal_ (email y WhatsApp por separado). Silenciarlo NO lo quita de favoritos — sigue resaltado en `/cuadros`. Permite separar **amigos** (notificables) de **rivales conocidos** (solo visuales).
+_Evitar_: confundir "silenciar la notificación" con "quitar de favoritos".
+
+**Modo de email** (de las notificaciones):
+Cómo agrupa el email: **cada resultado** (un email por resultado, ~inmediato) o **resumen diario** (un único email con todos los resultados del día anterior; si no hubo, no se envía). WhatsApp solo tiene la modalidad **cada resultado**.

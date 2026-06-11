@@ -8,6 +8,7 @@ const items = [
   { href: '/admin', label: 'Curado', match: (p: string) => p === '/admin' },
   { href: '/admin/whatsapp', label: 'WhatsApp', match: (p: string) => p.startsWith('/admin/whatsapp') },
   { href: '/admin/cuadros', label: 'Cuadros', match: (p: string) => p.startsWith('/admin/cuadros') },
+  { href: '/admin/usuarios', label: 'Usuarios', match: (p: string) => p.startsWith('/admin/usuarios') },
 ]
 
 export function AdminNav() {
