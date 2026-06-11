@@ -65,8 +65,9 @@ export default async function proxy(request: NextRequest) {
 
   if (!user || !user.isActive) {
     const response = NextResponse.redirect(new URL('/login', request.url))
-    response.cookies.delete('authjs.session-token')
-    response.cookies.delete('__Secure-authjs.session-token')
+    // Con prefijo __Secure- el browser rechaza el Set-Cookie de borrado si no
+    // trae el atributo Secure → la cookie sobrevivía y generaba un redirect loop.
+    response.cookies.delete({ name: cookieName, path: '/', secure: isProduction })
     return response
   }
 
