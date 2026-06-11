@@ -94,6 +94,34 @@ export async function getUsersAdmin() {
   }))
 }
 
+// Eliminación definitiva de un usuario (admin). Borra su carrera privada en cascada
+// (participaciones + partidos, favoritos, notificaciones, tokens). Lo que creó en el
+// CATÁLOGO COMPARTIDO (sedes, categorías, torneos, jugadores) no se borra — puede estar
+// referenciado por otros usuarios — sino que se reasigna su createdBy al superadmin que
+// ejecuta. Devuelve la URL del avatar para que el caller limpie el Blob (best-effort).
+export async function deleteUserAdmin(id: string, reassignToId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { role: true, image: true },
+  })
+  if (!user) throw new Error('Usuario no encontrado')
+  if (user.role === 'SUPERADMIN') throw new Error('No se puede eliminar un superadmin')
+
+  await prisma.$transaction([
+    prisma.venue.updateMany({ where: { createdById: id }, data: { createdById: reassignToId } }),
+    prisma.category.updateMany({ where: { createdById: id }, data: { createdById: reassignToId } }),
+    prisma.tournament.updateMany({ where: { createdById: id }, data: { createdById: reassignToId } }),
+    prisma.player.updateMany({ where: { createdById: id }, data: { createdById: reassignToId } }),
+    // Invitaciones que ENVIÓ (solo posible si fue superadmin alguna vez): conservar el registro.
+    prisma.invitation.updateMany({ where: { invitedById: id }, data: { invitedById: reassignToId } }),
+    // Cascadas: Entry (+Match), OtpToken, FavoritePlayer, ResultNotification.
+    // SetNull: PendingAuth.resolvedUserId, Invitation.acceptedUserId (la aceptación queda en el historial).
+    prisma.user.delete({ where: { id } }),
+  ])
+
+  return { image: user.image }
+}
+
 // Emails de los superadmin activos: destinatarios de la notificación de curado.
 // Desde Fase 2 el email es opcional; filtramos los que no lo tienen seteado.
 export async function getSuperadminEmails(): Promise<string[]> {

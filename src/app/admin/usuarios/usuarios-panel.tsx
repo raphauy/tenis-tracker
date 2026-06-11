@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
   SearchIcon,
+  MailIcon,
   MailPlusIcon,
   SendIcon,
   TrashIcon,
@@ -47,9 +48,18 @@ import {
   TooltipContent,
   TooltipProvider,
 } from '@/components/ui/tooltip'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import { WhatsAppIcon } from '@/components/whatsapp-icon'
 import type { UserAdmin } from '@/services/user-service'
 import type { InvitationAdmin } from '@/services/invitation-service'
-import { cancelInvitationAction, inviteUserAction, resendInvitationAction } from './actions'
+import {
+  cancelInvitationAction,
+  deleteUserAction,
+  getUserFavoritesAction,
+  inviteUserAction,
+  resendInvitationAction,
+  type UserFavorite,
+} from './actions'
 
 const fmtDate = (d: Date | string) =>
   new Date(d).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -345,7 +355,91 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
   )
 }
 
+// Lista de favoritos del usuario, cargada lazy al abrir el popup. Por favorito,
+// los íconos de canal apagados (tachado tenue) indican que lo silenció ahí.
+function FavoritesPopover({ userId, count }: { userId: string; count: number }) {
+  const [open, setOpen] = React.useState(false)
+  const [favorites, setFavorites] = React.useState<UserFavorite[] | null>(null)
+
+  async function handleOpenChange(o: boolean) {
+    setOpen(o)
+    if (o && favorites === null) {
+      const res = await getUserFavoritesAction(userId)
+      if (res.success) {
+        setFavorites(res.data!.favorites)
+      } else {
+        toast.error(res.error)
+        setOpen(false)
+      }
+    }
+  }
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger
+        render={
+          <Button variant="ghost" size="sm" className="h-auto px-1.5 py-0.5 font-medium" />
+        }
+      >
+        {count} · ver
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-72 p-0">
+        {favorites === null ? (
+          <p className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+            <Loader2Icon className="size-4 animate-spin" /> Cargando…
+          </p>
+        ) : (
+          <>
+            <ul className="max-h-72 overflow-y-auto py-1">
+              {favorites.map((fav) => (
+                <li
+                  key={fav.id}
+                  className="flex items-center justify-between gap-3 px-3 py-1.5 text-sm"
+                >
+                  <span className="min-w-0 truncate">{fav.name}</span>
+                  <span className="flex shrink-0 items-center gap-1.5">
+                    <MailIcon
+                      className={cn(
+                        'size-3.5',
+                        fav.notifyEmail ? 'text-foreground' : 'text-muted-foreground/40'
+                      )}
+                    />
+                    <WhatsAppIcon
+                      className={cn(
+                        'size-3.5',
+                        fav.notifyWhatsapp ? 'text-foreground' : 'text-muted-foreground/40'
+                      )}
+                    />
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="border-t px-3 py-2 text-xs text-muted-foreground">
+              Ícono apagado = canal silenciado para ese favorito.
+            </p>
+          </>
+        )}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 function UserDetailDialog({ user, onClose }: { user: UserAdmin; onClose: () => void }) {
+  const router = useRouter()
+  const [confirming, setConfirming] = React.useState(false)
+  const [deleting, setDeleting] = React.useState(false)
+
+  async function confirmDelete() {
+    setDeleting(true)
+    const res = await deleteUserAction(user.id)
+    setDeleting(false)
+    if (res.success) {
+      toast.success('Usuario eliminado')
+      onClose()
+      router.refresh()
+    } else toast.error(res.error)
+  }
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -411,8 +505,56 @@ function UserDetailDialog({ user, onClose }: { user: UserAdmin; onClose: () => v
             {WA_MODE_LABEL[user.notifyWhatsappMode]}
           </DetailRow>
           <DetailRow label="Participaciones">{user.entryCount}</DetailRow>
-          <DetailRow label="Favoritos">{user.favoriteCount}</DetailRow>
+          <DetailRow label="Favoritos">
+            {user.favoriteCount > 0 ? (
+              <FavoritesPopover userId={user.id} count={user.favoriteCount} />
+            ) : (
+              0
+            )}
+          </DetailRow>
         </dl>
+
+        {/* Eliminación definitiva. Los superadmin no se eliminan desde acá. */}
+        {user.role !== 'SUPERADMIN' &&
+          (confirming ? (
+            <div className="flex flex-col gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+              <p className="text-sm">
+                Se elimina la cuenta y toda su carrera:{' '}
+                {user.entryCount === 1 ? '1 participación' : `${user.entryCount} participaciones`}{' '}
+                con sus partidos, favoritos y notificaciones. Los torneos, sedes y jugadores del
+                catálogo que haya creado se conservan.{' '}
+                <strong>Esta acción no se puede deshacer.</strong>
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirming(false)}
+                  disabled={deleting}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                >
+                  {deleting && <Loader2Icon className="animate-spin" />}
+                  Eliminar definitivamente
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <DialogFooter>
+              <Button type="button" variant="destructive" onClick={() => setConfirming(true)}>
+                <TrashIcon />
+                Eliminar usuario
+              </Button>
+            </DialogFooter>
+          ))}
       </DialogContent>
     </Dialog>
   )

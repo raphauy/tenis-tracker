@@ -50,6 +50,17 @@ export async function findByNameKeys(nameKeys: string[]): Promise<FavoriteForNot
   )
 }
 
+// Favoritos de un usuario para el panel admin (/admin/usuarios): nombre + toggles por canal.
+export async function getFavoritesByUserAdmin(userId: string) {
+  return withRetry(() =>
+    prisma.favoritePlayer.findMany({
+      where: { userId },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, notifyEmail: true, notifyWhatsapp: true },
+    })
+  )
+}
+
 // Toggle: si ya es favorito lo quita (devuelve false), si no lo agrega (devuelve true).
 // Idempotente ante doble click concurrente: `deleteMany` no falla si no hay fila, y un
 // `create` que choca con el unique (otro toggle ganó la carrera) se trata como "ya es

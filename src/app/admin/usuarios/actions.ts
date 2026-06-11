@@ -13,6 +13,11 @@ import {
   prepareResend,
 } from '@/services/invitation-service'
 import { sendInvitationEmail } from '@/services/email-service'
+import { deleteUserAdmin } from '@/services/user-service'
+import { deleteImage } from '@/services/upload-service'
+import { getFavoritesByUserAdmin } from '@/services/favorite-service'
+
+export type UserFavorite = Awaited<ReturnType<typeof getFavoritesByUserAdmin>>[number]
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback
@@ -90,5 +95,42 @@ export async function cancelInvitationAction(id: string): Promise<ActionResult> 
     return { success: true }
   } catch (error) {
     return { success: false, error: errorMessage(error, 'No se pudo eliminar la invitación') }
+  }
+}
+
+// Favoritos de un usuario, cargados lazy al abrir el popup del detalle.
+export async function getUserFavoritesAction(
+  userId: string
+): Promise<ActionResult<{ favorites: UserFavorite[] }>> {
+  try {
+    await requireSuperadmin()
+    const favorites = await getFavoritesByUserAdmin(userId)
+    return { success: true, data: { favorites } }
+  } catch (error) {
+    return { success: false, error: errorMessage(error, 'No se pudieron cargar los favoritos') }
+  }
+}
+
+// Eliminación definitiva del usuario y su carrera privada. El catálogo compartido que
+// haya creado se reasigna al superadmin que ejecuta (ver deleteUserAdmin).
+export async function deleteUserAction(id: string): Promise<ActionResult> {
+  try {
+    const admin = await requireSuperadmin()
+    if (admin.id === id) {
+      return { success: false, error: 'No podés eliminar tu propia cuenta' }
+    }
+    const { image } = await deleteUserAdmin(id, admin.id)
+    // Avatar en Vercel Blob: limpieza best-effort (el usuario ya no existe).
+    if (image) {
+      try {
+        await deleteImage(image)
+      } catch {
+        // best-effort
+      }
+    }
+    revalidatePath('/admin/usuarios')
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: errorMessage(error, 'No se pudo eliminar el usuario') }
   }
 }
