@@ -1,5 +1,6 @@
-// Destino post-login. Siempre la raíz: el proxy resuelve `/` → /[slug] del usuario
-// (o /onboarding si todavía no eligió slug), sin que el cliente necesite conocer el slug.
+// Destino post-login por defecto: Cuadros. OJO: /cuadros es ruta pública (el proxy no la
+// intercepta), así que el caso "usuario nuevo sin slug → /onboarding" lo resuelven los
+// callers del lado server (afterLoginAction / login page) antes de usar esta URL.
 export function getPostLoginUrl(): string {
-  return '/'
+  return '/cuadros'
 }

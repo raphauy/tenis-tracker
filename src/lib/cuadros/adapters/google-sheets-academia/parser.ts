@@ -37,6 +37,17 @@ function isName(s: string): boolean {
   return t.length > 0 && /[a-záéíóúñ]/i.test(t)
 }
 
+// Correcciones de apellidos mal escritos en la planilla de La Academia (carga manual, con
+// typos). Se aplican al leer el nombre crudo, así la corrección queda en el dato y sobrevive
+// a cada sync. Palabra completa, case-insensitive; preserva el resto ("R. Carvallo" → "R. Carvalho").
+const NAME_FIXES: { from: RegExp; to: string }[] = [
+  { from: /\bCarvallo\b/gi, to: 'Carvalho' },
+]
+
+function fixName(raw: string): string {
+  return NAME_FIXES.reduce((s, { from, to }) => s.replace(from, to), raw)
+}
+
 function normalize(s: string): string {
   return s
     .normalize('NFD')
@@ -171,7 +182,7 @@ export function parseBracket(rows: string[][]): NormalizedBracket | null {
   for (let i = 0; dataStart + 2 * i < rows.length; i++) {
     const row = dataStart + 2 * i
     const seedRaw = cellAt(rows, row, 0)
-    const nameRaw = cellAt(rows, row, 1)
+    const nameRaw = fixName(cellAt(rows, row, 1))
     const seed = /^\d+$/.test(seedRaw) ? Number(seedRaw) : undefined
     seeds[i] = seed
     if (isName(nameRaw)) {
@@ -213,7 +224,7 @@ export function parseBracket(rows: string[][]): NormalizedBracket | null {
       }
 
       const match: MatchBuild = { slot: j, p1, p2, status: 'pending', winnerRow }
-      const rawWinner = cellAt(rows, winnerRow, winnerCol)
+      const rawWinner = fixName(cellAt(rows, winnerRow, winnerCol))
 
       // BYE en primera ronda: la planilla deja vacíos los dos casilleros de col1 y
       // escribe el jugador directo en la columna de la ronda siguiente. Lo mostramos

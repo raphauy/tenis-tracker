@@ -120,7 +120,7 @@ export function BracketPreview() {
               <PreviewMatch
                 className={CARD_W}
                 p1={{ name: 'S. Blanco', seed: 7 }}
-                p2={{ name: 'R. Carvallo', seed: 2, won: true, fav: true }}
+                p2={{ name: 'R. Carvalho', seed: 2, won: true, fav: true }}
                 score="6-7 7-5 10-4"
               />
             </div>
@@ -144,7 +144,7 @@ export function BracketPreview() {
             <div className="flex flex-1 items-center px-0.5">
               <PreviewMatch
                 className={CARD_W}
-                p1={{ name: 'R. Carvallo', seed: 2, fav: true }}
+                p1={{ name: 'R. Carvalho', seed: 2, fav: true }}
                 p2={{ name: 'C. Greanjeans', seed: 3 }}
                 pending
               />

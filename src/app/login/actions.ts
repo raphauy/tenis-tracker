@@ -10,6 +10,7 @@ import { emailSchema } from '@/lib/validations/auth'
 import { WA_LOGIN_PREFIX } from '@/lib/constants/auth'
 import { INVITE_COOKIE } from '@/lib/constants/invitation'
 import { requireUser } from '@/lib/auth-helpers'
+import { getPostLoginUrl } from '@/lib/auth-redirect'
 import type { ActionResult } from '@/lib/types'
 
 // Email backup (Fase 2): no crea usuarios — solo loguea a quienes ya verificaron email
@@ -39,24 +40,26 @@ export async function requestOtpAction(email: string): Promise<ActionResult> {
   }
 }
 
-// Post-login con cookie de invitación: si el usuario YA tenía cuenta (slug puesto),
-// la invitación se da por aceptada acá — no va a pasar por el onboarding, que es
-// donde se marca para los usuarios nuevos. Best-effort: nunca rompe el login.
-export async function consumeInviteAfterLogin(): Promise<void> {
+// Post-login: resuelve el destino y consume la invitación si aplica. Usuario nuevo (sin
+// slug) → /onboarding, dejando viva la cookie de invitación (prefill + accept ahí). Si YA
+// tenía cuenta (slug puesto), la invitación se da por aceptada acá — no va a pasar por el
+// onboarding. Best-effort: nunca rompe el login (ante un error devuelve el default; el
+// proxy igual fuerza onboarding en la primera ruta privada).
+export async function afterLoginAction(): Promise<string> {
   try {
-    const jar = await cookies()
-    const token = jar.get(INVITE_COOKIE)?.value
-    if (!token) return
     const user = await requireUser()
     const info = await getUserAccessInfo(user.id)
-    if (info?.slug) {
+    if (!info?.slug) return '/onboarding'
+    const jar = await cookies()
+    const token = jar.get(INVITE_COOKIE)?.value
+    if (token) {
       await acceptInvitation(token, user.id)
       jar.delete(INVITE_COOKIE)
     }
-    // Sin slug: usuario nuevo → la cookie sigue viva para el onboarding (prefill + accept).
   } catch {
     // best-effort
   }
+  return getPostLoginUrl()
 }
 
 // Magic-link inverso (Fase 2, canal primario de auth). Crea un PendingAuth y

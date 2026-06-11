@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { toast } from 'sonner'
-import { getPostLoginUrl } from '@/lib/auth-redirect'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,7 +21,7 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from '@/components/ui/input-otp'
-import { consumeInviteAfterLogin, requestOtpAction, requestWaLoginAction } from './actions'
+import { afterLoginAction, requestOtpAction, requestWaLoginAction } from './actions'
 import type { WaAuthStatus } from '@/app/api/auth/wa/status/route'
 
 // Estados del form:
@@ -68,11 +67,13 @@ export function LoginForm({ invitedName = null }: { invitedName?: string | null 
 
   const finishWithSignIn = useCallback(
     async (code: string) => {
+      // Destino resuelto en el server: Cuadros, u onboarding si la cuenta es nueva
+      // (también consume la invitación si aplica).
+      let destination: string
       try {
         const res = await signIn('whatsapp', { code, redirect: false })
         if (res?.error) throw new Error(res.error)
-        // Si vino por invitación y ya tenía cuenta, marcarla aceptada (best-effort).
-        await consumeInviteAfterLogin()
+        destination = await afterLoginAction()
       } catch {
         toast.error('No pudimos completar el login. Probá de nuevo.')
         setStep('idle')
@@ -83,7 +84,7 @@ export function LoginForm({ invitedName = null }: { invitedName?: string | null 
       // Navegación dura, NO router.push + router.refresh: la respuesta de la server
       // action + el refresh cancelaban la transición del push en pleno commit y la
       // pantalla quedaba clavada en "Esperando tu mensaje" con la sesión ya creada.
-      window.location.href = callbackUrl || getPostLoginUrl()
+      window.location.href = callbackUrl || destination
     },
     [callbackUrl],
   )
@@ -189,9 +190,9 @@ export function LoginForm({ invitedName = null }: { invitedName?: string | null 
       setOtp('')
       return
     }
-    await consumeInviteAfterLogin()
+    const destination = await afterLoginAction()
     // Navegación dura por la misma race que en finishWithSignIn.
-    window.location.href = callbackUrl || getPostLoginUrl()
+    window.location.href = callbackUrl || destination
   }
 
   // --- Render ---------------------------------------------------------------

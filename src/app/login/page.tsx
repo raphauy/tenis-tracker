@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getPostLoginUrl } from '@/lib/auth-redirect'
+import { getUserAccessInfo } from '@/services/user-service'
 import { INVITE_COOKIE } from '@/lib/constants/invitation'
 import { getInvitationByToken } from '@/services/invitation-service'
 import { LoginForm } from './login-form'
@@ -14,10 +15,12 @@ export const metadata: Metadata = {
 }
 
 export default async function LoginPage() {
-  // Si ya hay sesión, no mostrar el login: el proxy resuelve `/` → /[slug] u /onboarding.
+  // Si ya hay sesión, no mostrar el login: a Cuadros (u onboarding si todavía no tiene
+  // slug — hay que resolverlo acá porque /cuadros es público y el proxy no lo fuerza).
   const session = await auth()
   if (session?.user) {
-    redirect(getPostLoginUrl())
+    const info = await getUserAccessInfo(session.user.id)
+    redirect(info?.slug ? getPostLoginUrl() : '/onboarding')
   }
 
   // Si llegó desde una invitación (/invitacion/[token] dejó la cookie), el form
