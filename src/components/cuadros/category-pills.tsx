@@ -24,6 +24,10 @@ export function CategoryPills({
       <div className="flex w-max items-center gap-1.5">
         {categories.map((c) => {
           const active = c.slug === activeSlug
+          const label = shortCategoryLabel(c.categoryName)
+          // Etiquetas de 1–2 caracteres (B, C, 5) → círculo perfecto (ancho = alto); las más
+          // largas (Dobles) quedan como pastilla. Ambas con rounded-full.
+          const isShort = label.length <= 2
           return (
             <Link
               key={c.slug}
@@ -31,13 +35,14 @@ export function CategoryPills({
               title={c.categoryName}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
+                'inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium transition-colors',
+                isShort ? 'w-9' : 'px-4',
                 active
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
               )}
             >
-              {shortCategoryLabel(c.categoryName)}
+              {label}
             </Link>
           )
         })}
