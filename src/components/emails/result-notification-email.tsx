@@ -35,6 +35,7 @@ const SAMPLE: NotificationView = {
   nextRoundLabel: 'Semifinal',
   opponentName: 'Bárbara López',
   score: '6-4 6-3',
+  isWalkover: false,
   tournamentSlug: 'aut-grados-febrero-2026',
   categorySlug: '5ta',
 }

@@ -15,6 +15,7 @@ export type DetectedResult = {
   winnerName: string
   loserName: string | null // null si el rival era un BYE (slot ausente/bye)
   score: string | null
+  isWalkover: boolean // W.O.: el partido se definió sin jugarse → no hay marcador
 }
 
 function realName(slot: BracketSlot | undefined): string | null {
@@ -58,6 +59,7 @@ export function detectNewResults(
         winnerName,
         loserName: realName(loserSlot),
         score: match.score?.trim() || null,
+        isWalkover: match.outcome === 'walkover',
       })
     }
   })

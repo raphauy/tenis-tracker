@@ -24,7 +24,21 @@ describe('detectNewResults', () => {
     ])
     const res = detectNewResults(old, next)
     expect(res).toHaveLength(1)
-    expect(res[0]).toMatchObject({ winnerName: 'Ana', loserName: 'Bia', isFinal: true, score: '6-4 6-3' })
+    expect(res[0]).toMatchObject({ winnerName: 'Ana', loserName: 'Bia', isFinal: true, score: '6-4 6-3', isWalkover: false })
+  })
+
+  it('marca isWalkover en un W.O. (sin marcador) para que el copy muestre "W.O."', () => {
+    const old = bracket([
+      { label: '32avos', matches: [{ slot: 0, p1: player('Ana'), p2: player('Bia'), status: 'pending' }] },
+      { label: '16avos', matches: [{ slot: 0, status: 'pending' }] },
+    ])
+    const next = bracket([
+      { label: '32avos', matches: [{ slot: 0, p1: player('Ana'), p2: player('Bia'), winner: 1, outcome: 'walkover', status: 'played' }] },
+      { label: '16avos', matches: [{ slot: 0, status: 'pending' }] },
+    ])
+    const res = detectNewResults(old, next)
+    expect(res).toHaveLength(1)
+    expect(res[0]).toMatchObject({ winnerName: 'Ana', isWalkover: true, score: null })
   })
 
   it('no re-dispara un partido que ya estaba jugado (corrección posterior)', () => {

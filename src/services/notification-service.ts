@@ -39,6 +39,7 @@ function toView(n: ResultNotification): NotificationView {
     nextRoundLabel: n.nextRoundLabel,
     opponentName: n.opponentName,
     score: n.score,
+    isWalkover: n.isWalkover,
     tournamentSlug: n.tournamentSlug,
     categorySlug: n.categorySlug,
   }
@@ -75,6 +76,7 @@ export type RecordResultInput = {
   nextRoundLabel: string | null
   opponentName: string | null
   score: string | null
+  isWalkover: boolean
   tournamentSlug: string
   categorySlug: string
 }

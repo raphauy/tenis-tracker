@@ -397,6 +397,7 @@ model ResultNotification {
   nextRoundLabel String? // solo WON
   opponentName   String?
   score          String?
+  isWalkover     Boolean @default(false) // W.O.: el partido no tuvo marcador → se muestra "W.O." en vez de "sin marcador"
   tournamentSlug String // para linkear al cuadro
   categorySlug   String
 

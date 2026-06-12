@@ -383,6 +383,7 @@ function buildInput(
     nextRoundLabel: outcome === 'WON' ? e.nextRoundLabel : null,
     opponentName: isWinner ? e.loserName : e.winnerName,
     score: e.score,
+    isWalkover: e.isWalkover,
     tournamentSlug: ctx.tournamentSlug,
     categorySlug: ctx.categorySlug,
   }

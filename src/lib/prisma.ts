@@ -41,7 +41,11 @@ export async function withRetry<T>(
       const isConnectionError =
         lastError.message?.includes("Can't reach database server") ||
         lastError.message?.includes('Connection terminated') ||
-        lastError.message?.includes('connect ETIMEDOUT')
+        lastError.message?.includes('connect ETIMEDOUT') ||
+        // Neon despierta el compute desde autosuspend vía su control plane; con poco tráfico
+        // está dormido casi siempre y a veces ese arranque falla en frío (XX000). Es transitorio:
+        // el backoff le da tiempo a levantar y el reintento pasa. Ver docs sobre cold starts.
+        lastError.message?.includes('Control plane request failed')
 
       if (!isConnectionError || attempt === maxRetries) {
         throw error

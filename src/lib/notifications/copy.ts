@@ -17,6 +17,7 @@ export type NotificationView = {
   nextRoundLabel: string | null
   opponentName: string | null
   score: string | null
+  isWalkover: boolean // W.O.: sin marcador por naturaleza → se muestra "W.O.", no "sin marcador"
   tournamentSlug: string
   categorySlug: string
 }
@@ -45,8 +46,9 @@ function formatScore(score: string | null | undefined): string | null {
 
 // Frase de una línea con el desenlace. Item del resumen y cuerpo del email inmediato.
 export function notificationSummary(n: NotificationView): string {
-  const fScore = formatScore(n.score)
-  const score = fScore ? ` (${fScore})` : ''
+  // W.O. no tiene marcador: se rotula "W.O." en vez de omitir el detalle.
+  const detail = n.isWalkover ? 'W.O.' : formatScore(n.score)
+  const score = detail ? ` (${detail})` : ''
   // "le ganó a" pero "perdió con": en rioplatense se pierde CON el rival, no A el rival.
   const vsWon = n.opponentName ? ` a ${n.opponentName}` : ''
   const vsLost = n.opponentName ? ` con ${n.opponentName}` : ''
@@ -99,7 +101,7 @@ const TEMPLATE_BY_OUTCOME: Record<NotifyOutcomeKey, string> = {
 export function whatsappTemplateSpec(n: NotificationView): WhatsappTemplateSpec {
   const name = TEMPLATE_BY_OUTCOME[n.outcome]
   const torneo = torneoLabel(n)
-  const resultado = safe(formatScore(n.score), 'sin marcador')
+  const resultado = n.isWalkover ? 'W.O.' : safe(formatScore(n.score), 'sin marcador')
   switch (n.outcome) {
     case 'WON':
       return {
@@ -140,8 +142,9 @@ export function whatsappTemplateSpec(n: NotificationView): WhatsappTemplateSpec 
 // del "Seguilo en Tenis Tracker." del template). Omite la línea de resultado si no hay marcador.
 export function whatsappFreeText(n: NotificationView, bracketUrl: string): string {
   const torneo = torneoLabel(n)
-  const fScore = formatScore(n.score)
-  const resultado = (label: string) => (fScore ? `\n${label}: ${fScore}.` : '')
+  // W.O. → línea "Resultado: W.O."; con marcador → el score; sin nada → se omite la línea.
+  const detail = n.isWalkover ? 'W.O.' : formatScore(n.score)
+  const resultado = (label: string) => (detail ? `\n${label}: ${detail}.` : '')
   const rival = n.opponentName
   let head: string
   switch (n.outcome) {
