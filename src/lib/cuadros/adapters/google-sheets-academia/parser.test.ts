@@ -9,6 +9,7 @@ function fixture(name: string): string[][] {
 }
 
 const cabD = fixture('academia-cab-d-bracket.csv')
+const cabDCuartos = fixture('academia-cab-d-cuartos-drift.csv')
 const cabC = fixture('academia-cab-c-bracket.csv')
 const damas = fixture('academia-damas-serie.csv')
 
@@ -109,6 +110,31 @@ describe('parseBracket — Cab D (draw 64)', () => {
   it('rondas superiores aún sin jugar = pendientes', () => {
     expect(bracket.rounds[5].matches).toHaveLength(1)
     expect(bracket.rounds[5].matches[0].status).toBe('pending')
+  })
+})
+
+// Snapshot real de prod (etapa 3, Cab D): en cuartos, la planilla manual escribió el nombre
+// del ganador UNA fila arriba del punto medio geométrico → el nombre caía en la fila del score
+// y el partido quedaba "pendiente" pese a estar cargado. El parser busca el ganador en una
+// ventana de filas del winnerCol para tolerar ese corrimiento. Regresión de ese bug.
+describe('parseBracket — Cab D cuartos con nombre corrido (drift)', () => {
+  const bracket = parseBracket(cabDCuartos)!
+
+  it('reconoce el cuarto R. Carvalho vs M. Meneses pese al corrimiento de fila', () => {
+    const qf = bracket.rounds[3] // Cuartos
+    const m = qf.matches[2]
+    expect(m.p1?.name).toBe('R. Carvalho')
+    expect(m.p2?.name).toBe('M. Meneses')
+    expect(m.status).toBe('played')
+    expect(m.winner).toBe(2) // gana M. Meneses
+    expect(m.score).toBe('6-4 7-6')
+    expect(m.outcome).toBe('normal')
+  })
+
+  it('el ganador de cuartos avanza a semifinal (M. Meneses)', () => {
+    const sf = bracket.rounds[4] // Semifinal
+    const names = sf.matches.flatMap((m) => [m.p1?.name, m.p2?.name])
+    expect(names).toContain('M. Meneses')
   })
 })
 

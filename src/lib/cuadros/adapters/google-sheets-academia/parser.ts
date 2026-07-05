@@ -37,6 +37,15 @@ function isName(s: string): boolean {
   return t.length > 0 && /[a-záéíóúñ]/i.test(t)
 }
 
+// ¿La celda parece el NOMBRE de un ganador (y no un score ni un token de desenlace)?
+// Se usa al buscar el ganador de una ronda derivada en una ventana de filas: hay que
+// distinguir el nombre del score de abajo. Los nombres del dominio nunca traen dígitos;
+// "Wo."/"W.O." es token de walkover (tiene letras, pero no es un nombre).
+function looksLikeName(s: string): boolean {
+  const t = s.trim()
+  return isName(t) && !/\d/.test(t) && !/^w\.?\s*o\.?$/i.test(t)
+}
+
 // Correcciones de apellidos mal escritos en la planilla de La Academia (carga manual, con
 // typos). Se aplican al leer el nombre crudo, así la corrección queda en el dato y sobrevive
 // a cada sync. Palabra completa, case-insensitive; preserva el resto ("R. Carvallo" → "R. Carvalho").
@@ -224,7 +233,25 @@ export function parseBracket(rows: string[][]): NormalizedBracket | null {
       }
 
       const match: MatchBuild = { slot: j, p1, p2, status: 'pending', winnerRow }
-      const rawWinner = fixName(cellAt(rows, winnerRow, winnerCol))
+
+      // Fila real del ganador. El punto medio geométrico asume una grilla perfecta, pero la
+      // planilla es MANUAL: en rondas derivadas (r>0) el nombre del ganador suele quedar
+      // corrido ±1-2 filas respecto del medio (así el nombre cae en la fila del score y el
+      // match quedaba "pendiente" pese a estar cargado). Lo buscamos en una ventana chica del
+      // MISMO winnerCol; los ganadores vecinos de esta ronda están ≥8 filas → sin colisión.
+      // r=0 va anclado a la grilla de entrantes (no drifta): se lee directo.
+      let nameRow = winnerRow
+      if (r > 0) {
+        for (const off of [0, -1, 1, -2, 2, -3, 3]) {
+          const cand = winnerRow + off
+          if (cand >= 0 && looksLikeName(cellAt(rows, cand, winnerCol))) {
+            nameRow = cand
+            break
+          }
+        }
+      }
+      match.winnerRow = nameRow // propaga la fila REAL hacia arriba: medios más fieles al layout
+      const rawWinner = fixName(cellAt(rows, nameRow, winnerCol))
 
       // BYE en primera ronda: la planilla deja vacíos los dos casilleros de col1 y
       // escribe el jugador directo en la columna de la ronda siguiente. Lo mostramos
@@ -248,7 +275,7 @@ export function parseBracket(rows: string[][]): NormalizedBracket | null {
         const winner = assignWinner(rawWinner, p1, p2)
         match.winner = winner
         match.winnerSlot = winner === 1 ? p1 : winner === 2 ? p2 : undefined
-        const { score, outcome } = classifyScore(cellAt(rows, winnerRow + 1, winnerCol))
+        const { score, outcome } = classifyScore(cellAt(rows, nameRow + 1, winnerCol))
         match.outcome = outcome
         if (score) match.score = score
       }
