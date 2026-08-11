@@ -8,19 +8,25 @@ import { BracketMatch } from './bracket-match'
 
 // Layout MOBILE: navegación por rondas con los Tabs de shadcn, variante `line`
 // (underline coherente con el nav del Perfil), subrayado activo en primary y
-// estirados a todo el ancho (los triggers ya traen flex-1).
+// estirados a todo el ancho (los triggers ya traen flex-1). La lista queda pegada
+// bajo la barra de contexto (`--cuadro-chrome-h`): la ronda es el dato que más se
+// pierde al scrollear una lista larga de partidos.
 export function BracketRoundsMobile({ bracket }: { bracket: NormalizedBracket }) {
   const first = bracket.rounds[0]?.index ?? 0
 
   return (
     <Tabs defaultValue={String(first)} className="w-full">
-      <TabsList variant="line" className="w-full border-b">
-        {bracket.rounds.map((round) => (
-          <TabsTrigger key={round.index} value={String(round.index)} className="after:bg-primary">
-            {shortRoundLabel(round)}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+      {/* El borde va en el wrapper (no en la lista) para que cruce de lado a lado
+          pese al edge-bleed; el subrayado del tab activo cae justo encima. */}
+      <div className="sticky top-[var(--cuadro-chrome-h)] z-20 -mx-6 border-b bg-background/95 px-6 pt-2 backdrop-blur">
+        <TabsList variant="line" className="w-full">
+          {bracket.rounds.map((round) => (
+            <TabsTrigger key={round.index} value={String(round.index)} className="after:bg-primary">
+              {shortRoundLabel(round)}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
       {bracket.rounds.map((round) => {
         // Conectores de pareja: los partidos van de a dos (2k, 2k+1) y alimentan el mismo
         // partido de la ronda siguiente. Mostramos un stub horizontal al medio de cada uno
