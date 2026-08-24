@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { syncExternalBrackets } from '@/services/external-bracket-service'
+import { withHeartbeat } from '@/lib/cimarron'
 
 // Cron (vercel.json, cada 6h). Sincroniza los cuadros externos desde sus fuentes.
 // Vercel inyecta `Authorization: Bearer ${CRON_SECRET}`.
@@ -16,6 +17,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
+  // El latido arranca DESPUÉS de la autorización: un 401 no es una corrida. Si latiera,
+  // cualquiera que conozca la ruta del cron mantendría viva la ventana de Cimarrón con
+  // el cron muerto.
+  return withHeartbeat(process.env.CIMARRON_PING_SYNC_CUADROS, runCron)
+}
+
+async function runCron(): Promise<NextResponse> {
   const report = await syncExternalBrackets()
   return NextResponse.json({ ok: true, ...report })
 }

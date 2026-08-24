@@ -6,6 +6,7 @@ import { countPendingTournaments } from '@/services/tournament-service'
 import { getSuperadminEmails } from '@/services/user-service'
 import { sendCurationDigestEmail } from '@/services/email-service'
 import { cleanupExpiredPendingAuths } from '@/services/pending-auth-service'
+import { withHeartbeat } from '@/lib/cimarron'
 
 // Cron diario (vercel.json). Notifica al superadmin si hay entradas de catálogo
 // pendientes de curar. Vercel inyecta `Authorization: Bearer ${CRON_SECRET}`.
@@ -22,6 +23,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
+  // El latido arranca DESPUÉS de la autorización: un 401 no es una corrida. Si latiera,
+  // cualquiera que conozca la ruta del cron mantendría viva la ventana de Cimarrón con
+  // el cron muerto.
+  return withHeartbeat(process.env.CIMARRON_PING_CURATION, runCron)
+}
+
+async function runCron(): Promise<NextResponse> {
   // Higiene del flujo Magic-link inverso: purgar PendingAuth con expiresAt < now-24h.
   // No bloquea ni cambia el resto del cron; solo logueamos cuántos se borraron.
   const purgedPendingAuths = await cleanupExpiredPendingAuths()

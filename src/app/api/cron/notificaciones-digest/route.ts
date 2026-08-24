@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { runDailyDigest } from '@/services/notification-service'
+import { withHeartbeat } from '@/lib/cimarron'
 
 // Uruguay es UTC-3 fijo (sin horario de verano).
 const UY_OFFSET_MS = 3 * 60 * 60 * 1000
@@ -28,6 +29,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
+  // El latido arranca DESPUÉS de la autorización: un 401 no es una corrida. Si latiera,
+  // cualquiera que conozca la ruta del cron mantendría viva la ventana de Cimarrón con
+  // el cron muerto.
+  return withHeartbeat(process.env.CIMARRON_PING_NOTIFICACIONES_DIGEST, runCron)
+}
+
+async function runCron(): Promise<NextResponse> {
   const cutoff = uyTodayMidnightUtc(new Date())
   const result = await runDailyDigest(cutoff)
   return NextResponse.json({ ok: true, cutoff: cutoff.toISOString(), ...result })

@@ -418,3 +418,21 @@ model ResultNotification {
   @@index([emailStatus])
   @@index([whatsappStatus])
 }
+
+/// Última señal de cada dependencia externa, para el `/health` que lee Cimarrón.
+///
+/// Los pasivos del contrato (spec §5.4 de Cimarrón) no se miden con un ping propio:
+/// se reporta lo que dejaron las llamadas REALES de la app. Serverless no retiene
+/// memoria entre invocaciones, así que la evidencia tiene que quedar en la base.
+///
+/// Una fila por Componente (`kapso`, `google-sheets`, `supabase`, `resend`), con la
+/// clave natural como id: no puede haber dos. Sin fila = sin tráfico jamás, que el
+/// contrato reporta con los tres campos en null.
+model DependencyHealth {
+  component         String    @id
+  lastSuccessAt     DateTime?
+  lastFailureAt     DateTime?
+  /// Mensaje del último fallo, truncado. Viaja al dashboard de Cimarrón: sin secretos.
+  lastFailureDetail String?
+  updatedAt         DateTime  @updatedAt
+}

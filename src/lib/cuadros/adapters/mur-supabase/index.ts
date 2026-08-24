@@ -13,6 +13,7 @@ import type {
   SourceAdapter,
 } from '@/lib/cuadros/types'
 import { buildBracket, type MurMatch, type MurRegistration } from './builder'
+import { recordResponse, recordThrown } from '@/services/health-service'
 
 const TYPE = 'mur-supabase'
 
@@ -23,12 +24,21 @@ function apiKey(): string {
 }
 
 // GET a la REST API de MUR con la anon key (lectura pública). Lanza si no responde 2xx.
+// Única salida del adapter, y por eso el lugar donde se deja la señal del Componente
+// `supabase` que el /health le reporta a Cimarrón (ver health-service).
 async function murGet<T>(baseUrl: string, path: string): Promise<T> {
   const key = apiKey()
-  const res = await fetch(`${baseUrl}${path}`, {
-    cache: 'no-store',
-    headers: { apikey: key, Authorization: `Bearer ${key}` },
-  })
+  let res: Response
+  try {
+    res = await fetch(`${baseUrl}${path}`, {
+      cache: 'no-store',
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    })
+  } catch (error) {
+    await recordThrown('supabase', error, path)
+    throw error
+  }
+  await recordResponse('supabase', res, { context: path })
   if (!res.ok) throw new Error(`MUR PostgREST ${res.status}: ${path}`)
   return res.json() as Promise<T>
 }

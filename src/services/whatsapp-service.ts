@@ -1,5 +1,6 @@
 import { WhatsAppClient, buildKapsoFields } from '@kapso/whatsapp-cloud-api'
 import type { ConversationRecord, MetaMessage } from '@kapso/whatsapp-cloud-api'
+import { recordResponse, recordThrown } from '@/services/health-service'
 import {
   AUTH_MESSAGE_REGEX,
   AUTH_FALLBACK_REGEX,
@@ -78,15 +79,54 @@ function phoneNumberId(): string {
 }
 
 function client(): WhatsAppClient {
-  return new WhatsAppClient({ baseUrl: KAPSO_PROXY_BASE, kapsoApiKey: apiKey() })
+  // El SDK acepta un fetch propio: se lo damos instrumentado para que TODA llamada a
+  // Kapso —las de hoy y las que se agreguen— deje la señal del Componente `kapso` del
+  // /health, sin tener que acordarse de envolver cada método.
+  return new WhatsAppClient({
+    baseUrl: KAPSO_PROXY_BASE,
+    kapsoApiKey: apiKey(),
+    fetch: recordedFetch,
+  })
+}
+
+/**
+ * `fetch` que registra el Componente `kapso` para Cimarrón (ver health-service).
+ *
+ * Registra por STATUS y no por «lanzó o no»: el SDK lanza un GraphApiError también
+ * cuando Meta rechaza el mensaje (131047, ventana de 24h cerrada), que llega como 400
+ * y no es Kapso caído. La regla de health-service ya deja los 4xx de pedido afuera.
+ */
+const recordedFetch: typeof fetch = async (input, init) => {
+  let res: Response
+  try {
+    res = await fetch(input, init)
+  } catch (error) {
+    await recordThrown('kapso', error, requestPath(input))
+    throw error
+  }
+  await recordResponse('kapso', res, { context: requestPath(input) })
+  return res
+}
+
+/** El path de la request, para que el detalle del fallo diga a qué se le pegó. */
+function requestPath(input: RequestInfo | URL): string {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+  try {
+    return new URL(url).pathname
+  } catch {
+    return url
+  }
 }
 
 // Fetch a la API de plataforma de Kapso (health/metadata no están en el SDK).
 // Devuelve el body crudo: ojo que algunos endpoints envuelven en `data` (number)
 // y otros responden el objeto directo (health) — el caller desenvuelve si hace falta.
 async function platformGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${KAPSO_PLATFORM_BASE}${path}`, {
-    headers: { 'X-API-Key': apiKey() },
+  // `apiKey()` fuera del fetch instrumentado: que falte la env var es config nuestra,
+  // no Kapso caído.
+  const key = apiKey()
+  const res = await recordedFetch(`${KAPSO_PLATFORM_BASE}${path}`, {
+    headers: { 'X-API-Key': key },
     cache: 'no-store',
   })
   if (!res.ok) throw new Error(`Kapso ${path} devolvió ${res.status}`)

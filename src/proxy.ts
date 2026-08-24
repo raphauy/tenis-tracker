@@ -12,14 +12,23 @@ export default async function proxy(request: NextRequest) {
   const firstSeg = segments[0]
 
   // Siempre públicas sin sesión: login, rutas de API (NextAuth), los cuadros
-  // externos (/cuadros/*) y las invitaciones (/invitacion/[token], el invitado
-  // todavía no tiene cuenta). Están en RESERVED_SLUGS (no son un perfil), así
-  // que sin este short-circuit caerían al gate de sesión de abajo.
+  // externos (/cuadros/*), las invitaciones (/invitacion/[token], el invitado
+  // todavía no tiene cuenta) y /health. Están en RESERVED_SLUGS (no son un perfil),
+  // así que sin este short-circuit caerían al gate de sesión de abajo.
+  //
+  // /health no es público de verdad: se autentica por Bearer contra Cimarrón, no por
+  // cookie de sesión. Sin esta línea el proxy le devolvería un redirect a /login, que
+  // el monitoreo leería como la app contestando 200 con HTML.
+  //
+  // Va por igualdad exacta y no por primer segmento, como /login: hay UNA sola ruta
+  // bajo /health, y con prefijo cualquier `src/app/health/**` que se agregue mañana
+  // quedaría fuera del gate de sesión sola y en silencio.
   if (
     pathname === '/login' ||
     firstSeg === 'api' ||
     firstSeg === 'cuadros' ||
-    firstSeg === 'invitacion'
+    firstSeg === 'invitacion' ||
+    pathname === '/health'
   ) {
     return NextResponse.next()
   }

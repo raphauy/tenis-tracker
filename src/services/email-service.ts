@@ -6,8 +6,54 @@ import ResultNotificationEmail from '@/components/emails/result-notification-ema
 import DailyDigestEmail from '@/components/emails/daily-digest-email'
 import InvitationEmail from '@/components/emails/invitation-email'
 import { notificationTitle, type NotificationView } from '@/lib/notifications/copy'
+import { recordStatus, recordSuccess, recordThrown } from '@/services/health-service'
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+const resendClient = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+
+/**
+ * Único punto por el que la app manda un mail, y por eso el único lugar donde hay que
+ * registrar el Componente `resend` del /health que lee Cimarrón (ver health-service).
+ *
+ * Envuelve al cliente en vez de tocar cada `resend.emails.send(...)` de este archivo:
+ * el resto del service no se entera —incluidos los `if (!resend)` de arriba, porque
+ * sigue siendo null sin API key— y no queda ningún camino a Resend sin testigo.
+ *
+ * OJO CON EL SDK: Resend NO lanza cuando la API rechaza — devuelve `error` con su
+ * `statusCode`. Solo lanza si se cayó el transporte.
+ */
+const resend = resendClient === null ? null : instrument(resendClient)
+
+function instrument(client: Resend) {
+  return {
+    emails: {
+      async send(
+        ...args: Parameters<Resend['emails']['send']>
+      ): ReturnType<Resend['emails']['send']> {
+        let result: Awaited<ReturnType<Resend['emails']['send']>>
+        try {
+          result = await client.emails.send(...args)
+        } catch (error) {
+          await recordThrown('resend', error, 'emails.send')
+          throw error
+        }
+
+        if (!result.error) {
+          await recordSuccess('resend')
+        } else if (result.error.statusCode !== null) {
+          await recordStatus('resend', result.error.statusCode, {
+            context: `emails.send ${result.error.name}`,
+          })
+        } else {
+          // Sin status no hay forma de saber si el pedido era inválido; se cuenta como
+          // fallo, que es el lado seguro: un silencio acá es un mail que no salió.
+          await recordThrown('resend', result.error.message, 'emails.send')
+        }
+
+        return result
+      },
+    },
+  }
+}
 
 /**
  * Decide si efectivamente despachar emails al provider.

@@ -12,6 +12,7 @@ import type {
   SourceAdapter,
 } from '@/lib/cuadros/types'
 import { academiaIdentity, parseBracket, parseHeader, type AcademiaHeader } from './parser'
+import { recordResponse, recordThrown } from '@/services/health-service'
 
 const TYPE = 'google-sheets-academia'
 
@@ -26,7 +27,7 @@ function apiKey(): string {
 // Enumera las hojas (gid + título) vía Sheets API v4 (key gratis para hojas públicas).
 async function listSheets(spreadsheetId: string): Promise<SheetMeta[]> {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties(sheetId,title)&key=${apiKey()}`
-  const res = await fetch(url, { cache: 'no-store' })
+  const res = await sheetsFetch(url, 'sheets-api')
   if (!res.ok) throw new Error(`Sheets API ${res.status}: no se pudieron listar las hojas`)
   const json = (await res.json()) as {
     sheets?: { properties?: { sheetId?: number; title?: string } }[]
@@ -41,9 +42,28 @@ async function listSheets(spreadsheetId: string): Promise<SheetMeta[]> {
 // Baja una hoja como CSV (sin auth; el export es público).
 async function fetchSheetCsv(spreadsheetId: string, gid: number): Promise<string> {
   const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`
-  const res = await fetch(url, { cache: 'no-store' })
+  const res = await sheetsFetch(url, 'csv-export')
   if (!res.ok) throw new Error(`CSV export ${res.status}: no se pudo bajar la hoja gid=${gid}`)
   return res.text()
+}
+
+/**
+ * Las dos salidas a Google pasan por acá para dejar la señal del Componente
+ * `google-sheets` que el /health le reporta a Cimarrón (ver health-service).
+ *
+ * Un 404 —planilla borrada o gid que ya no existe— no cuenta como fallo de Google:
+ * es la config de la fuente que quedó vieja, y el sync lo reporta por su lado.
+ */
+async function sheetsFetch(url: string, context: string): Promise<Response> {
+  let res: Response
+  try {
+    res = await fetch(url, { cache: 'no-store' })
+  } catch (error) {
+    await recordThrown('google-sheets', error, context)
+    throw error
+  }
+  await recordResponse('google-sheets', res, { context })
+  return res
 }
 
 export const googleSheetsAcademiaAdapter: SourceAdapter = {

@@ -15,6 +15,7 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   'invite',
   'app',
   'cuadros',
+  'health', // el /health que consulta Cimarrón: la ruta gana, pero el slug no se ofrece
   'u',
   'p',
   '_next',
