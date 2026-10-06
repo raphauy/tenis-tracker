@@ -3,12 +3,8 @@ import { Prisma } from '@prisma/client'
 import { prisma, withRetry } from '@/lib/prisma'
 import { SOURCES } from '@/lib/cuadros/sources'
 import { adapterFor } from '@/lib/cuadros/adapters'
-import { isBracketComplete } from '@/lib/cuadros/bracket-status'
+import { isBracketComplete, isPastCompletionFallback } from '@/lib/cuadros/bracket-status'
 import type { NormalizedBracket } from '@/lib/cuadros/types'
-
-// Tras este lapso desde startDate, un torneo 'completion' se archiva aunque su final no
-// figure jugada (fallback ante metadata floja de la fuente; evita re-sincronizar para siempre).
-const COMPLETION_FALLBACK_MS = 30 * 24 * 60 * 60 * 1000
 import { getSuperadminEmails } from '@/services/user-service'
 import { sendSyncAlertEmail } from '@/services/email-service'
 import { normalizeName } from '@/lib/text'
@@ -473,8 +469,7 @@ export async function syncExternalBrackets(): Promise<SyncReport> {
         // fallback de antigüedad si la fuente nunca marca la final. Al archivar, el próximo
         // sync lo congela (no se vuelve a bajar).
         if (completion && bracketsBuilt > 0) {
-          const old = !!t.startDate && Date.now() - t.startDate.getTime() > COMPLETION_FALLBACK_MS
-          if (allComplete || old) {
+          if (allComplete || isPastCompletionFallback(t)) {
             await setTournamentStatus(row.id, 'ARCHIVED')
             report.archived++
           }

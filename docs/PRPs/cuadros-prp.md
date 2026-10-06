@@ -223,11 +223,11 @@ export type NormalizedBracket = {
 // src/lib/cuadros/sources.ts  (registro en código; el dato va a la DB)
 export type SourceInstance =
   | { type: 'google-sheets-academia'; config: { spreadsheetId: string } }
-  | { type: 'mur-supabase'; config: { baseUrl: string; nameFilter: string } } // anon key en env
+  | { type: 'mur-supabase'; config: { baseUrl: string; nameFilters: string[] } } // anon key en env; UNA entrada por type
 
 export const SOURCES: SourceInstance[] = [
   { type: 'google-sheets-academia', config: { spreadsheetId: '1JpCOXQf9IUobOre6LgqyWjluD6BEdNJ0W9I02lpiWEo' } },
-  // F2: { type: 'mur-supabase', config: { baseUrl: 'https://tsxzhdnyykknmivdpyzv.supabase.co/rest/v1', nameFilter: 'grados' } },
+  // F2: { type: 'mur-supabase', config: { baseUrl: 'https://tsxzhdnyykknmivdpyzv.supabase.co/rest/v1', nameFilters: ['grados', 'babolat'] } },
 ]
 
 // src/lib/cuadros/adapters/<type>.ts  (puro, sin Prisma)
@@ -300,7 +300,7 @@ Task F1.8: Panel admin /admin/cuadros
 # ===== Fase 2 — AUT Grados / MUR (adapter fino, reusa modelo + UI) =====
 Task F2.1: Adapter mur-supabase (puro)
   - src/lib/cuadros/adapters/mur-supabase.ts: PostgREST con MUR_SUPABASE_ANON_KEY.
-    discoverTournaments (filtro nameFilter), discoverCategories (tournament_circuits),
+    discoverTournaments (filtro nameFilters, OR de ilike), discoverCategories (tournament_circuits),
     fetchBracket (matches + join en cliente a registrations por player_name; select PII-safe),
     identityKey = 'mur:<uuid>'. round != bracket → null (grupos en F3).
   - rondas explícitas (round string) → mapear a label/index.

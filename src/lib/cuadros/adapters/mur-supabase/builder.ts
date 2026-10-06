@@ -22,6 +22,7 @@ export type MurMatch = {
   player1_score: string | null
   player2_score: string | null
   status: string // 'completed' | 'scheduled' | ...
+  group_id?: string | null // seteado solo en categorías por grupos (round-robin)
 }
 
 export type MurRegistration = {
@@ -54,9 +55,13 @@ function strip(m: Built): NormalizedMatch {
 }
 
 // Construye el cuadro normalizado a partir de los matches + inscripciones de una categoría
-// MUR. Devuelve null si no hay matches (etapa en inscripción, sin draw aún).
+// MUR. Devuelve null si no hay matches (etapa en inscripción, sin draw aún) o si la categoría
+// se juega por grupos (no es un cuadro de eliminación).
 export function buildBracket(matches: MurMatch[], registrations: MurRegistration[]): NormalizedBracket | null {
   if (matches.length === 0) return null
+  // Round-robin (ej. Babolat Tour 2, categoría A): los matches traen group_id y la "ronda"
+  // es la fecha ("Fecha 1"…). Armarlo como bracket daría un cuadro sin sentido → se omite.
+  if (matches.some((m) => m.group_id != null)) return null
 
   // matches.playerN_id → registrations.id (NO a players.id). El nombre y la siembra salen
   // de la inscripción; player_id es la identidad global (sourceId, para futuro cross-link).

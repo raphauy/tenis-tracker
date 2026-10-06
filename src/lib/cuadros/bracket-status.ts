@@ -8,6 +8,22 @@ export function isBracketComplete(b: NormalizedBracket): boolean {
   return !!last && last.matches.length === 1 && last.matches[0].status === 'played'
 }
 
+// Margen del fallback de archivado: pasado este lapso desde la fecha de referencia, un torneo
+// 'completion' se archiva aunque su final no figure jugada (metadata floja de la fuente;
+// evita re-sincronizar para siempre).
+export const COMPLETION_FALLBACK_MS = 30 * 24 * 60 * 60 * 1000
+
+// ¿Venció el fallback de archivado por antigüedad? La referencia es el FIN declarado del
+// torneo y, si la fuente no lo da, el inicio. Contar desde el inicio congelaba a mitad de
+// juego los torneos largos (un Babolat Tour dura un mes o más). Sin ninguna fecha → nunca.
+export function isPastCompletionFallback(
+  t: { startDate: Date | null; endDate?: Date | null },
+  now: number = Date.now()
+): boolean {
+  const ref = t.endDate ?? t.startDate
+  return !!ref && now - ref.getTime() > COMPLETION_FALLBACK_MS
+}
+
 export type BracketProgress =
   | { state: 'champion'; championName: string }
   | { state: 'in-progress'; roundLabel: string }

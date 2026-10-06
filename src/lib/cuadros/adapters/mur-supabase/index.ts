@@ -56,10 +56,15 @@ export const murSupabaseAdapter: SourceAdapter = {
   archivePolicy: 'completion',
 
   async discoverTournaments(config) {
-    const { baseUrl, nameFilter } = config as MurConfig
-    const rows = await murGet<{ id: string; name: string; start_date: string | null }[]>(
+    const { baseUrl, nameFilters } = config as MurConfig
+    // Sin patrones no hay filtro posible: un `or=()` vacío traería error o, peor, todo MUR.
+    if (nameFilters.length === 0) throw new Error('MUR: nameFilters vacío')
+    const nameOr = nameFilters.map((f) => `name.ilike.*${f}*`).join(',')
+    const rows = await murGet<
+      { id: string; name: string; start_date: string | null; end_date: string | null }[]
+    >(
       baseUrl,
-      `/tournaments?name=ilike.*${nameFilter}*&deleted=eq.0&select=id,name,start_date&order=start_date.desc`
+      `/tournaments?or=(${nameOr})&deleted=eq.0&select=id,name,start_date,end_date&order=start_date.desc`
     )
     // Slug legible: nombre + período (mes/año). Dedup dentro del batch para no chocar con
     // el @unique de slug (dos etapas homónimas del mismo mes → sufijo -2). El identityKey
@@ -78,6 +83,7 @@ export const murSupabaseAdapter: SourceAdapter = {
         slug,
         name: t.name.trim(),
         startDate,
+        endDate: t.end_date ? new Date(t.end_date) : null,
         locator: { tournamentId: t.id },
       }
     })
@@ -109,10 +115,11 @@ export const murSupabaseAdapter: SourceAdapter = {
   async fetchBracket(config, category) {
     const { baseUrl } = config as MurConfig
     const { circuitId } = category.locator as { circuitId: string }
-    // Solo el cuadro principal (bracket_type=main); las consolaciones quedan post-feature.
+    // Solo el cuadro principal (bracket_type=main, la "Copa de Oro" de MUR); las consolaciones
+    // (silver_cup, Copa de Plata de los Babolat Tour) quedan post-feature.
     const matches = await murGet<MurMatch[]>(
       baseUrl,
-      `/matches?circuit_id=eq.${circuitId}&bracket_type=eq.main&order=match_number&select=match_number,round,player1_id,player2_id,winner_id,player1_score,player2_score,status`
+      `/matches?circuit_id=eq.${circuitId}&bracket_type=eq.main&order=match_number&select=match_number,round,player1_id,player2_id,winner_id,player1_score,player2_score,status,group_id`
     )
     // PII-safe: solo nombre + siembra + id global; nunca email/teléfono/nacimiento.
     const registrations = await murGet<MurRegistration[]>(
@@ -120,7 +127,7 @@ export const murSupabaseAdapter: SourceAdapter = {
       `/registrations?circuit_id=eq.${circuitId}&select=id,player_name,seed_position,player_id`
     )
     const normalized = buildBracket(matches, registrations)
-    if (!normalized) return null // sin matches → etapa en inscripción (sin draw)
+    if (!normalized) return null // sin matches (etapa en inscripción) o categoría por grupos
     // El crudo guardado es el payload PII-safe (no se persiste PII).
     const raw = JSON.stringify({ matches, registrations })
     return { normalized, raw, categoryName: category.categoryName }

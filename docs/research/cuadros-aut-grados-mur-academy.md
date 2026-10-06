@@ -151,6 +151,41 @@ Apuntes sueltos para no perder contexto; los resuelve quien diseñe la feature (
 - **Consolaciones:** `bracket_type` distingue cuadro principal de Plata/Bronce si se quisieran mostrar.
 - **Auth/Key:** pinear la anon key en env y tener un plan si MUR la rota (alertar, no fallar silencioso).
 
+## 9. Babolat Tour (addendum, 2026-10-06)
+
+MUR también publica los **Babolat Tour** (categorías `A`–`E`, ~1 mes de duración, a veces más). Misma API y
+mismo modelo que los Grados. Desde esta fecha se sincronizan con el mismo adapter (`nameFilters:
+['grados', 'babolat']`), **solo el cuadro `main`** — que la web de MUR rotula "Copa de Oro", igual que en los
+Grados. Relevado contra los 4 torneos existentes ("Babolat TOUR 2026", "BABOLAT TOUR 2", "3" y "4"):
+
+- **Copa de Plata = `bracket_type: "silver_cup"` en `matches`**, con rondas `"Copa Plata - Cuartos de Final"`,
+  etc. El circuito la declara con `tournament_circuits.bracket_type = "with_silver_cup"` (vs
+  `"single_elimination"`). Es un cuadro de eliminación normal con el mismo pairing (r+1 match j ← 2j, 2j+1).
+  - Tours 1–3: casi todas las categorías B–E son `with_silver_cup`. **Tour 4: las 4 son
+    `single_elimination`, sin partidos de Plata.**
+  - Los partidos de Plata **se crean junto con el sorteo** (mismo `created_at` que los `main`), vacíos, y se
+    van llenando con quien pierde su primer partido jugado (incluye a quien pasó por bye y perdió en la ronda
+    siguiente).
+  - `match_number` de Plata sigue al de `main` (16–22 en un cuadro de 16) salvo en el Tour 1, donde reinicia
+    en 1. Ordenar siempre **dentro** del `bracket_type`.
+- **Para sumar la Plata** hay que resolver:
+  - **Regla de BYE del builder:** en Plata un slot de 1ª ronda con un solo jugador es "rival por definir"
+    mientras el `main` sigue en juego, y MUR **nunca lo avanza solo** aunque el rival no vaya a existir (queda
+    `scheduled` sin ganador). Hoy el builder lo marcaría BYE. En `main` los byes reales vienen `completed`
+    con `winner_id` → esa es la señal confiable.
+  - **Archivado:** muchas finales de Plata no se juegan nunca (Tour 2: tres pendientes meses después). No
+    pueden bloquear el archivado por completitud.
+  - **Copy de notificaciones:** perder en la 1ª ronda de Oro no es "quedó eliminado" (baja a Plata).
+  - **Presentación:** lo más barato es un `ExternalBracket` aparte por copa ("D · Copa de Plata"), sin
+    migración ni cambios de UI.
+- **Round-robin real:** la categoría A del Tour 2 se jugó por grupos — `group_id` seteado y `round` =
+  `"Fecha 1"`…`"Fecha 3"`, con el circuito igual declarado `single_elimination`. O sea: **el `bracket_type` del
+  circuito no alcanza** para saber el formato; la señal es `matches.group_id`. El builder devuelve `null` y la
+  categoría se omite.
+- **`tournaments.status` no sirve** (torneos terminados hace meses siguen en `registration_open`).
+  `end_date` es orientativa: el Tour 3 "terminaba" el 13/9 y la final de C se jugó el 18/9. Por eso el
+  fallback de archivado cuenta 30 días desde `end_date`, no desde `start_date`.
+
 ## Apéndice A — Endpoints / recetas (reproducibles)
 
 > `tsxzhdnyykknmivdpyzv.supabase.co` es el proyecto Supabase de MUR. La **anon key** de abajo es **su clave

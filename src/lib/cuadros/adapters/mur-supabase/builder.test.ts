@@ -74,6 +74,32 @@ describe('buildBracket — sin matches', () => {
   })
 })
 
+describe('buildBracket — categoría por grupos (round-robin)', () => {
+  // Babolat Tour 2, categoría A: 2 grupos, la "ronda" es la fecha y cada match trae group_id.
+  // No es un cuadro de eliminación → null, para que el orquestador omita la categoría.
+  const regs: MurRegistration[] = [
+    { id: 'a', player_name: 'A', seed_position: null, player_id: null },
+    { id: 'b', player_name: 'B', seed_position: null, player_id: null },
+    { id: 'c', player_name: 'C', seed_position: null, player_id: null },
+  ]
+  const matches: MurMatch[] = [
+    { match_number: 1, round: 'Fecha 1', player1_id: 'a', player2_id: 'b', winner_id: 'a', player1_score: '6-1, 6-2', player2_score: '1-6, 2-6', status: 'completed', group_id: 'g1' },
+    { match_number: 3, round: 'Fecha 2', player1_id: 'a', player2_id: 'c', winner_id: null, player1_score: null, player2_score: null, status: 'scheduled', group_id: 'g1' },
+    { match_number: 5, round: 'Fecha 3', player1_id: 'b', player2_id: 'c', winner_id: null, player1_score: null, player2_score: null, status: 'scheduled', group_id: 'g1' },
+  ]
+
+  it('devuelve null si los matches traen group_id', () => {
+    expect(buildBracket(matches, regs)).toBeNull()
+  })
+
+  it('group_id null (eliminación directa) NO dispara el guard', () => {
+    const elim: MurMatch[] = [
+      { match_number: 1, round: 'Final', player1_id: 'a', player2_id: 'b', winner_id: null, player1_score: null, player2_score: null, status: 'scheduled', group_id: null },
+    ]
+    expect(buildBracket(elim, regs)).not.toBeNull()
+  })
+})
+
 describe('buildBracket — slot vacío en ronda superior (semi pendiente)', () => {
   // Draw de 4: una semi jugada (A) y la otra pendiente → la final tiene a A esperando y el
   // otro lado vacío. NO es un bye (bye solo en 1ª ronda): debe quedar pendiente, en blanco.

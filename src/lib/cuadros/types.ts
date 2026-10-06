@@ -40,6 +40,9 @@ export type DiscoveredTournament = {
   slug: string // 'academia-mg-2026-etapa-3' (derivado del identityKey, URL-safe)
   name: string // label completo a mostrar
   startDate: Date | null
+  // Fin declarado por la fuente, si lo da (MUR). No se persiste: solo alimenta el fallback
+  // de archivado por antigüedad (isPastCompletionFallback).
+  endDate?: Date | null
   locator: unknown // dato interno del adapter para llegar a sus categorías (ej. lista de hojas)
 }
 

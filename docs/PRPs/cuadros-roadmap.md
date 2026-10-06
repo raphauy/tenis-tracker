@@ -102,5 +102,5 @@ Plan por fases secuenciales. PRP completo en [`cuadros-prp.md`](./cuadros-prp.md
 Cada uno sería su propia feature con PRP + roadmap:
 
 - **Cross-link de identidad:** cruzar nombres del cuadro con `Player`/usuarios `/[slug]` (normalización fuzzy por typos; uuids estables en MUR ayudan). Habilita "ver el cuadro completo del torneo que jugaste" y enlazar rivales a sus perfiles.
-- **Consolaciones** (Copa de Plata/Bronce) vía `bracket_type` de MUR.
+- **Consolaciones** (Copa de Plata/Bronce) vía `bracket_type` de MUR. Los **Babolat Tour** ya se sincronizan (mismo adapter, solo cuadro `main` = Copa de Oro); la Copa de Plata (`silver_cup`) quedó afuera. Qué hay que resolver para sumarla: `docs/research/cuadros-aut-grados-mur-academy.md` § 9.
 - **Alta de fuentes self-service** (admin UI) si el registry en código se queda corto.
