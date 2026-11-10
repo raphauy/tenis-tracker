@@ -51,6 +51,7 @@ function looksLikeName(s: string): boolean {
 // a cada sync. Palabra completa, case-insensitive; preserva el resto ("R. Carvallo" → "R. Carvalho").
 const NAME_FIXES: { from: RegExp; to: string }[] = [
   { from: /\bCarvallo\b/gi, to: 'Carvalho' },
+  { from: /\bCarvahlo\b/gi, to: 'Carvalho' },
 ]
 
 function fixName(raw: string): string {
@@ -166,6 +167,19 @@ export function academiaIdentity(year: number, etapaNumber: number): { identityK
   }
 }
 
+// El Masters cierra el año y se juega en noviembre, pero su hoja no trae fecha. Se le asigna
+// el 1° de noviembre (UTC) para que el listado lo ordene arriba de las etapas del año.
+export function mastersStartDate(year: number): Date {
+  return new Date(Date.UTC(year, 10, 1))
+}
+
+export function mastersIdentity(year: number): { identityKey: string; slug: string } {
+  return {
+    identityKey: `academia-mg:${year}-masters`,
+    slug: `academia-mg-${year}-masters`,
+  }
+}
+
 // ---------- Bracket ----------
 
 type MatchBuild = NormalizedMatch & {
@@ -176,11 +190,27 @@ type MatchBuild = NormalizedMatch & {
 // Detecta el formato y, si es bracket de eliminación, lo parsea. Devuelve null para
 // round-robin (SERIE) o si no se reconoce un cuadro (F1 solo soporta bracket).
 export function parseBracket(rows: string[][]): NormalizedBracket | null {
-  // Fila de header del cuadro: primer campo == "Player".
-  const headerRow = rows.findIndex((row) => (row[0] ?? '').trim().toLowerCase() === 'player')
+  return parseBracketGrid(rows, 'player')
+}
+
+// Parser posicional común a las hojas de etapa (header "Player") y a los bloques del Masters
+// (header "Clasificados"). `skipBlankRows`: el Masters deja una fila en blanco entre el header
+// y el primer entrante; se saltea hasta la primera fila con seed o nombre.
+function parseBracketGrid(
+  rows: string[][],
+  headerLabel: string,
+  skipBlankRows = false
+): NormalizedBracket | null {
+  // Fila de header del cuadro: primer campo == headerLabel.
+  const headerRow = rows.findIndex((row) => (row[0] ?? '').trim().toLowerCase() === headerLabel)
   if (headerRow === -1) return null // sin header de bracket → round-robin u otro → null
 
-  const dataStart = headerRow + 1
+  let dataStart = headerRow + 1
+  if (skipBlankRows) {
+    while (dataStart < rows.length && !cellAt(rows, dataStart, 0) && !cellAt(rows, dataStart, 1)) {
+      dataStart++
+    }
+  }
 
   // Entrantes (ronda 0): grilla regular de 2 filas por slot. slot i → fila dataStart+2i.
   // Seed en col0 (si es numérico), nombre en col1. Los play-ins (nombres sueltos en col0)
@@ -303,4 +333,74 @@ function stripBuild(m: MatchBuild): NormalizedMatch {
   if (m.score) match.score = m.score
   if (m.outcome) match.outcome = m.outcome
   return match
+}
+
+// ---------- Masters ----------
+
+// La hoja "Masters" trae VARIOS cuadros de 8 en una grilla de bloques (hoy 3 por fila). Cada
+// bloque se ubica por CONTENIDO: una celda ancla "Torneo de Maestros - <rama> - Divisional X"
+// con la fila "Clasificados | QF | SF | F | CAMPEON" debajo. Se recorta a una sub-grilla propia
+// y se parsea con la misma geometría que una hoja de etapa.
+
+export type MastersBlock = {
+  categoryName: string // "Singles Caballeros - A"
+  raw: string // CSV del bloque recortado (snapshot + hash por cuadro, no por hoja)
+  bracket: NormalizedBracket
+}
+
+const MASTERS_ANCHOR = /^torneo de maestros\b/i
+const MASTERS_BLOCK_WIDTH = 5 // Clasificados, QF, SF, F, CAMPEON
+
+// "Torneo de Maestros - Singles Caballeros - Divisional A" → "Singles Caballeros - A"
+// (sin "Divisional", así el label corto de la pill da "A" igual que en la etapa).
+function mastersCategoryName(title: string): string {
+  return title
+    .trim()
+    .replace(MASTERS_ANCHOR, '')
+    .replace(/^[\s\-–—]+/, '')
+    .replace(/\bdivisional\s+/i, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function toCsv(rows: string[][]): string {
+  return rows
+    .map((row) => row.map((c) => (/[",\r\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c)).join(','))
+    .join('\n')
+}
+
+// Devuelve los cuadros del Masters que tienen jugadores, en orden de lectura (por fila de
+// bloques, de izquierda a derecha). [] si la hoja no es del Masters o está toda vacía.
+export function parseMastersSheet(rows: string[][]): MastersBlock[] {
+  const anchors: { r: number; c: number }[] = []
+  rows.forEach((row, r) =>
+    row.forEach((cell, c) => {
+      if (MASTERS_ANCHOR.test(cell.trim())) anchors.push({ r, c })
+    })
+  )
+
+  const blocks: MastersBlock[] = []
+  for (const { r, c } of anchors) {
+    // El bloque llega hasta la fila anterior al siguiente ancla que cae DEBAJO de él (sus
+    // columnas se solapan) o al fin de la hoja. Los bloques de al lado no lo cortan, aunque
+    // sus títulos estén corridos una fila (la planilla es manual).
+    const below = anchors.filter((a) => a.r > r && Math.abs(a.c - c) < MASTERS_BLOCK_WIDTH)
+    const end = Math.min(...below.map((a) => a.r), rows.length)
+    const grid: string[][] = []
+    for (let i = r; i < end; i++) {
+      grid.push(Array.from({ length: MASTERS_BLOCK_WIDTH }, (_, j) => rows[i]?.[c + j] ?? ''))
+    }
+
+    // Bloque sin jugadores (solo los números de clasificación): todavía no es un cuadro.
+    // El header se ubica por contenido (puede haber filas en blanco entre título y header).
+    const header = grid.findIndex((row) => row[0].trim().toLowerCase() === 'clasificados')
+    if (header === -1) continue
+    if (!grid.slice(header + 1).some((row) => row.slice(1).some(isName))) continue
+
+    const categoryName = mastersCategoryName(rows[r][c])
+    const bracket = parseBracketGrid(grid, 'clasificados', true)
+    if (!categoryName || !bracket) continue
+    blocks.push({ categoryName, raw: toCsv(grid), bracket })
+  }
+  return blocks
 }

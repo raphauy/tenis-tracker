@@ -11,12 +11,45 @@ import type {
   DiscoveredTournament,
   SourceAdapter,
 } from '@/lib/cuadros/types'
-import { academiaIdentity, parseBracket, parseHeader, type AcademiaHeader } from './parser'
+import {
+  academiaIdentity,
+  mastersIdentity,
+  mastersStartDate,
+  parseBracket,
+  parseHeader,
+  parseMastersSheet,
+  type AcademiaHeader,
+  type MastersBlock,
+} from './parser'
 import { recordResponse, recordThrown } from '@/services/health-service'
 
 const TYPE = 'google-sheets-academia'
 
 type SheetMeta = { gid: number; title: string }
+
+// Locators internos (viajan en memoria entre discovery y fetch; no se persisten). La planilla
+// expone dos tipos de torneo: la etapa vigente (una hoja = una categoría) y el Masters (UNA
+// hoja con un cuadro por divisional, ya parseados en el discovery).
+type EtapaTournamentLocator = { kind: 'etapa'; sheets: SheetMeta[]; year: number; etapaNumber: number }
+type MastersTournamentLocator = { kind: 'masters'; blocks: MastersBlock[] }
+type EtapaCategoryLocator = { kind: 'etapa'; gid: number; year: number; etapaNumber: number }
+type MastersCategoryLocator = { kind: 'masters'; block: MastersBlock }
+
+// Pestaña candidata a ser la del Masters; se confirma por contenido (bloques con jugadores).
+const MASTERS_TAB = /masters|maestros/i
+
+// Slugs únicos dentro de un torneo a partir de nombres visibles.
+function uniqueSlugs(names: string[]): string[] {
+  const used = new Set<string>()
+  return names.map((name, i) => {
+    const base = slugify(name) || `cat-${i}`
+    let slug = base
+    let n = 2
+    while (used.has(slug)) slug = `${base}-${n++}`
+    used.add(slug)
+    return slug
+  })
+}
 
 function apiKey(): string {
   const key = process.env.GOOGLE_SHEETS_API_KEY
@@ -76,13 +109,29 @@ export const googleSheetsAcademiaAdapter: SourceAdapter = {
     // planilla tiene hojas que NO lo traen (Rankings, plantillas vacías, sobras de
     // ediciones viejas con "EDICIÓN:" en vez de "ETAPA"). Escaneamos hasta encontrar
     // la primera hoja con un header de etapa válido.
+    // Cache por gid dentro del discovery: las pestañas del Masters suelen ir ANTES de la
+    // primera hoja de etapa, así que este escaneo ya las bajó.
+    const csvByGid = new Map<number, string>()
+    const csvOf = async (gid: number) => {
+      const cached = csvByGid.get(gid)
+      if (cached !== undefined) return cached
+      const csv = await fetchSheetCsv(spreadsheetId, gid)
+      csvByGid.set(gid, csv)
+      return csv
+    }
     let header: AcademiaHeader | null = null
     for (const s of sheets) {
-      header = parseHeader(parseCsv(await fetchSheetCsv(spreadsheetId, s.gid)))
+      header = parseHeader(parseCsv(await csvOf(s.gid)))
       if (header) break
     }
     if (!header) throw new Error('No se pudo parsear la etapa/año en ninguna hoja de la planilla')
     const { identityKey, slug } = academiaIdentity(header.year, header.etapaNumber)
+    const etapaLocator: EtapaTournamentLocator = {
+      kind: 'etapa',
+      sheets,
+      year: header.year,
+      etapaNumber: header.etapaNumber,
+    }
     const tournament: DiscoveredTournament = {
       identityKey,
       slug,
@@ -90,35 +139,71 @@ export const googleSheetsAcademiaAdapter: SourceAdapter = {
       startDate: header.startDate,
       // sheets se reusa en discoverCategories (sin re-fetch); year/etapaNumber viajan
       // para filtrar en fetchBracket las hojas que son de OTRA etapa/edición.
-      locator: { sheets, year: header.year, etapaNumber: header.etapaNumber },
+      locator: etapaLocator,
     }
-    return [tournament]
+    const tournaments = [tournament]
+
+    // Masters ("Torneo de Maestros"): torneo APARTE de la misma planilla. La hoja no trae año
+    // → se toma el de la etapa vigente. Solo existe si algún bloque tiene jugadores. Si la
+    // hoja no se puede bajar, LANZA (como cualquier fallo de discovery): tragarse el error
+    // haría que archiveMissing archive —sin vuelta— un Masters vivo por un fallo transitorio.
+    // Se leen TODAS las pestañas candidatas (puede haber otra con "Masters" en el título que
+    // no sea el cuadro, o el Masters repartido en dos); las que aportan cuadros salen de las
+    // hojas de la etapa para no volver a bajarlas como categoría.
+    const blocks: MastersBlock[] = []
+    const mastersGids = new Set<number>()
+    for (const s of sheets.filter((s) => MASTERS_TAB.test(s.title))) {
+      const found = parseMastersSheet(parseCsv(await csvOf(s.gid)))
+      if (found.length === 0) continue
+      blocks.push(...found)
+      mastersGids.add(s.gid)
+    }
+    if (blocks.length > 0) {
+      etapaLocator.sheets = sheets.filter((s) => !mastersGids.has(s.gid))
+      tournaments.push({
+        ...mastersIdentity(header.year),
+        name: `La Academia MG ${header.year} — Masters`,
+        startDate: mastersStartDate(header.year), // la hoja no trae fecha: noviembre
+        locator: { kind: 'masters', blocks } satisfies MastersTournamentLocator,
+      })
+    }
+    return tournaments
   },
 
   async discoverCategories(_config, tournament) {
-    const { sheets, year, etapaNumber } = tournament.locator as {
-      sheets: SheetMeta[]
-      year: number
-      etapaNumber: number
+    const locator = tournament.locator as EtapaTournamentLocator | MastersTournamentLocator
+    if (locator.kind === 'masters') {
+      const slugs = uniqueSlugs(locator.blocks.map((b) => b.categoryName))
+      return locator.blocks.map(
+        (block, i): DiscoveredCategory => ({
+          categoryName: block.categoryName,
+          slug: slugs[i],
+          displayOrder: i,
+          locator: { kind: 'masters', block } satisfies MastersCategoryLocator,
+        })
+      )
     }
-    const used = new Set<string>()
-    return sheets.map((s, i): DiscoveredCategory => {
-      const base = slugify(s.title) || `cat-${i}`
-      let slug = base
-      let n = 2
-      while (used.has(slug)) slug = `${base}-${n++}`
-      used.add(slug)
-      return { categoryName: s.title, slug, displayOrder: i, locator: { gid: s.gid, year, etapaNumber } }
-    })
+    const { sheets, year, etapaNumber } = locator
+    const slugs = uniqueSlugs(sheets.map((s) => s.title))
+    return sheets.map(
+      (s, i): DiscoveredCategory => ({
+        categoryName: s.title,
+        slug: slugs[i],
+        displayOrder: i,
+        locator: { kind: 'etapa', gid: s.gid, year, etapaNumber } satisfies EtapaCategoryLocator,
+      })
+    )
   },
 
   async fetchBracket(config, category) {
     const { spreadsheetId } = config as AcademiaConfig
-    const { gid, year, etapaNumber } = category.locator as {
-      gid: number
-      year: number
-      etapaNumber: number
+    const locator = category.locator as EtapaCategoryLocator | MastersCategoryLocator
+    // Masters: el bloque ya vino parseado del discovery (misma hoja para todos los cuadros).
+    if (locator.kind === 'masters') {
+      const { bracket, raw, categoryName } = locator.block
+      return { normalized: bracket, raw, categoryName }
     }
+    const { gid, year, etapaNumber } = locator
     const csv = await fetchSheetCsv(spreadsheetId, gid)
     const rows = parseCsv(csv)
     const normalized = parseBracket(rows)

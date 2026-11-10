@@ -1,7 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parseCsv } from '@/lib/cuadros/csv'
-import { academiaIdentity, parseBracket, parseHeader } from './parser'
+import {
+  academiaIdentity,
+  mastersIdentity,
+  mastersStartDate,
+  parseBracket,
+  parseHeader,
+  parseMastersSheet,
+} from './parser'
 
 function fixture(name: string): string[][] {
   const csv = readFileSync(new URL(`./__fixtures__/${name}`, import.meta.url), 'utf8')
@@ -12,6 +19,7 @@ const cabD = fixture('academia-cab-d-bracket.csv')
 const cabDCuartos = fixture('academia-cab-d-cuartos-drift.csv')
 const cabC = fixture('academia-cab-c-bracket.csv')
 const damas = fixture('academia-damas-serie.csv')
+const masters = fixture('academia-masters.csv')
 
 describe('parseHeader', () => {
   it('extrae etapa, año y categoría del bracket', () => {
@@ -169,5 +177,150 @@ describe('parseBracket — Cab C (byes)', () => {
 describe('parseBracket — formato SERIE (round-robin)', () => {
   it('devuelve null (no soportado en F1)', () => {
     expect(parseBracket(damas)).toBeNull()
+  })
+})
+
+// Hoja "Masters": UNA hoja con varios cuadros de 8 en grilla (3 bloques por fila). Cada
+// bloque arranca en una celda "Torneo de Maestros - ..." con el header "Clasificados" debajo.
+// Fixture real (nov 2026): 5 divisionales con jugadores, Damas A solo con los números, y
+// todavía sin resultados cargados.
+describe('parseMastersSheet', () => {
+  const blocks = parseMastersSheet(masters)
+
+  it('detecta los bloques con jugadores, en orden de lectura, y omite el vacío', () => {
+    expect(blocks.map((b) => b.categoryName)).toEqual([
+      'Singles Caballeros - A',
+      'Singles Caballeros - B',
+      'Singles Caballeros - C',
+      'Singles Caballeros - D',
+      'Singles Caballeros - E',
+    ])
+  })
+
+  it('cada cuadro es de 8: Cuartos / Semifinal / Final', () => {
+    for (const b of blocks) {
+      expect(b.bracket.drawSize).toBe(8)
+      expect(b.bracket.rounds.map((r) => r.label)).toEqual(['Cuartos', 'Semifinal', 'Final'])
+      expect(b.bracket.rounds.map((r) => r.matches.length)).toEqual([4, 2, 1])
+    }
+  })
+
+  it('cruces y seeds de cuartos (1–8, 5–4, 3–6, 7–2)', () => {
+    const qf = blocks[0].bracket.rounds[0].matches
+    expect(qf.map((m) => [m.p1, m.p2])).toEqual([
+      [{ name: 'N. Fabregat', seed: 1 }, { name: 'J. Calvo', seed: 8 }],
+      [{ name: 'V. Viscovick', seed: 5 }, { name: 'S. Naya', seed: 4 }],
+      [{ name: 'C. Diena', seed: 3 }, { name: 'M. Privaz', seed: 6 }],
+      [{ name: 'G. Cabrera', seed: 7 }, { name: 'S. Bianchi', seed: 2 }],
+    ])
+  })
+
+  it('un bloque no se contamina con el vecino ni con el de abajo', () => {
+    const names = (i: number) =>
+      blocks[i].bracket.rounds[0].matches.flatMap((m) => [m.p1?.name, m.p2?.name])
+    expect(names(1)).toEqual([
+      'V. Viscovick', 'F. Portillo', 'D. Cleffi', 'M. Hernandez',
+      'I. Reis', 'M. Canadell', 'L. Sanguinetti', 'G. Lamarque',
+    ])
+    expect(names(3)[0]).toBe('M. Meneses')
+    expect(names(4)[7]).toBe('M. Kahn')
+  })
+
+  it('sin resultados cargados, todos los partidos quedan pendientes', () => {
+    for (const b of blocks) {
+      for (const r of b.bracket.rounds) {
+        for (const m of r.matches) {
+          expect(m.status).toBe('pending')
+          expect(m.winner).toBeUndefined()
+        }
+      }
+    }
+  })
+
+  it('corrige el apellido mal escrito en la planilla real (R. Carvahlo → R. Carvalho)', () => {
+    expect(blocks[3].bracket.rounds[0].matches[2].p2).toEqual({ name: 'R. Carvalho', seed: 6 })
+  })
+
+  it('el crudo de cada bloque es solo su recorte (el hash de un bloque no depende de otro)', () => {
+    expect(blocks[0].raw).toContain('N. Fabregat')
+    expect(blocks[0].raw).not.toContain('V. Viscovick,,,,,,1') // nada del bloque B
+    expect(blocks[0].raw).not.toContain('B. Lopez')
+    expect(blocks[0].raw).not.toContain('M. Meneses')
+    const changed = masters.map((row) => [...row])
+    changed[4][9] = 'V. Viscovick' // resultado en la divisional B
+    expect(parseMastersSheet(changed)[0].raw).toBe(blocks[0].raw)
+  })
+
+  // Variante SINTÉTICA: la hoja real aún no tiene resultados. Se asume la convención de las
+  // hojas de etapa (ganador en el punto medio de la columna siguiente, score en la fila de
+  // abajo). Contrastar con un fixture real cuando carguen el primer resultado.
+  it('con un resultado cargado, el partido queda jugado y el ganador avanza a semifinal', () => {
+    const played = masters.map((row) => [...row])
+    played[4][2] = 'J. Calbo' // typo a propósito: matchea a J. Calvo
+    played[5][2] = '6-3 6-4'
+    played[8][2] = 'S. Naya'
+    played[9][2] = 'Wo.'
+    const a = parseMastersSheet(played)[0].bracket
+    const [m0, m1] = a.rounds[0].matches
+    expect(m0.status).toBe('played')
+    expect(m0.winner).toBe(2)
+    expect(m0.score).toBe('6-3 6-4')
+    expect(m1.winner).toBe(2)
+    expect(m1.outcome).toBe('walkover')
+    const sf = a.rounds[1].matches[0]
+    expect(sf.p1).toEqual({ name: 'J. Calvo', seed: 8 })
+    expect(sf.p2).toEqual({ name: 'S. Naya', seed: 4 })
+    expect(sf.status).toBe('pending')
+  })
+
+  it('una divisional aparece sola cuando le cargan jugadores', () => {
+    const filled = masters.map((row) => [...row])
+    const names = ['A. Uno', 'B. Dos', 'C. Tres', 'D. Cuatro', 'E. Cinco', 'F. Seis', 'G. Siete', 'H. Ocho']
+    names.forEach((n, i) => { filled[23 + 2 * i][15] = n })
+    const all = parseMastersSheet(filled)
+    expect(all).toHaveLength(6)
+    expect(all[5].categoryName).toBe('Singles Damas - A')
+    expect(all[5].bracket.rounds[0].matches[0].p1).toEqual({ name: 'A. Uno', seed: 1 })
+  })
+
+  it('tolera títulos de bloques vecinos corridos una fila y una fila en blanco antes del header', () => {
+    const shifted = masters.map((row) => [...row])
+    shifted[1][14] = shifted[0][14] // título de la divisional C una fila más abajo
+    shifted[0][14] = ''
+    shifted[2][14] = 'Clasificados'
+    shifted[1][15] = ''
+    const all = parseMastersSheet(shifted)
+    expect(all.map((b) => b.categoryName)).toEqual([
+      'Singles Caballeros - A',
+      'Singles Caballeros - B',
+      'Singles Caballeros - C',
+      'Singles Caballeros - D',
+      'Singles Caballeros - E',
+    ])
+    expect(all[1].bracket.rounds[0].matches[0].p1?.name).toBe('V. Viscovick')
+    expect(all[2].bracket.rounds[0].matches[0].p1).toEqual({ name: 'B. Lopez', seed: 1 })
+  })
+
+  it('una hoja de etapa no tiene bloques de Masters', () => {
+    expect(parseMastersSheet(cabD)).toEqual([])
+  })
+
+  it('la hoja del Masters no es un cuadro de etapa', () => {
+    expect(parseBracket(masters)).toBeNull()
+  })
+})
+
+describe('mastersStartDate', () => {
+  it('fecha el Masters en noviembre del año (UTC)', () => {
+    expect(mastersStartDate(2026).toISOString()).toBe('2026-11-01T00:00:00.000Z')
+  })
+})
+
+describe('mastersIdentity', () => {
+  it('compone identityKey y slug por año', () => {
+    expect(mastersIdentity(2026)).toEqual({
+      identityKey: 'academia-mg:2026-masters',
+      slug: 'academia-mg-2026-masters',
+    })
   })
 })
