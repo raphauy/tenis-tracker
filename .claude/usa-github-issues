@@ -1,0 +1,7 @@
+# Este repo lleva su trabajo técnico en GitHub issues (raphauy/tenis-tracker).
+#
+# El hook ~/.claude/hooks/marcar-issue.sh mira este archivo: donde está, un "#NN"
+# en el prompt marca el issue de la sesión y la statusline lo muestra. El contenido
+# de este archivo no se lee: alcanza con que exista.
+#
+# La instrucción al agente para agregarle el título vive en ~/.claude/CLAUDE.md.

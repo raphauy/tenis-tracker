@@ -149,3 +149,19 @@ Prisma schema en `prisma/schema.prisma`. Los modelos concretos se definen en los
 - `docs/new-features/` — borradores de features antes de PRP.
 - `docs/dev/` — notas técnicas, code reviews extensas.
 - `docs/deploy/` — notas de deploy por feature.
+
+## Agent skills
+
+Este repo usa los engineering skills de [mattpocock/skills](https://github.com/mattpocock/skills). Los skills están en inglés y no se editan, pero **todo lo que producen va en español con acentos**: specs, tickets, ADRs y reportes. No se traducen los identificadores del dominio ni los nombres de las labels.
+
+### Issue tracker
+
+Issues de GitHub en `raphauy/tenis-tracker`, vía `gh`. Todo issue lleva una label de modelo sugerido (`model:fable` / `model:opus`). Ver `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Las cinco por defecto (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`), más las de wayfinder y las de modelo. Ver `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: glosario en `docs/context.md` (no hay `CONTEXT.md` en la raíz) y ADRs en `docs/adr/`. Ver `docs/agents/domain.md`.
