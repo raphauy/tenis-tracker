@@ -9,6 +9,7 @@ import { getSuperadminEmails } from '@/services/user-service'
 import { sendSyncAlertEmail } from '@/services/email-service'
 import { normalizeName } from '@/lib/text'
 import { detectNewResults, type DetectedResult } from '@/lib/cuadros/detect-results'
+import { searchPlayers, type PlayerSearchResult } from '@/lib/cuadros/player-search'
 import { findByNameKeys, type FavoriteForNotification } from '@/services/favorite-service'
 import {
   dispatchPendingNotifications,
@@ -231,6 +232,32 @@ export async function getBracketBySlug(tournamentSlug: string, categorySlug: str
     if (!bracket) return null
     return { tournament, bracket, siblings }
   })
+}
+
+// Buscador de jugador: todos sus partidos en los cuadros (vivos y archivados). Son pocos
+// cuadros (decenas) y el draw vive en JSON, así que se filtra en memoria con la lógica pura.
+export async function searchPlayersInBrackets(query: string): Promise<PlayerSearchResult> {
+  const brackets = await withRetry(() =>
+    prisma.externalBracket.findMany({
+      select: {
+        slug: true,
+        categoryName: true,
+        data: true,
+        tournament: { select: { name: true, slug: true, startDate: true } },
+      },
+    })
+  )
+  return searchPlayers(
+    brackets.map((b) => ({
+      tournamentName: b.tournament.name,
+      tournamentSlug: b.tournament.slug,
+      startDate: b.tournament.startDate ? b.tournament.startDate.toISOString() : null,
+      categoryName: b.categoryName,
+      categorySlug: b.slug,
+      bracket: b.data as unknown as NormalizedBracket,
+    })),
+    query
+  )
 }
 
 export async function listForAdmin(): Promise<ExternalTournamentWithBrackets[]> {

@@ -9,7 +9,7 @@ import { useFavorites } from './favorites-provider'
 // El score crudo viene desde la perspectiva del GANADOR (sus games primero), con los
 // sets separados por espacio ("6-7 7-5 10-4"). Lo mostramos separado por coma y con el
 // set ganado por el ganador (X > Y) en negrita.
-function ScoreSets({ score }: { score: string }) {
+export function ScoreSets({ score }: { score: string }) {
   const sets = score.trim().split(/\s+/)
   return (
     <span className="min-w-0 truncate tabular-nums">

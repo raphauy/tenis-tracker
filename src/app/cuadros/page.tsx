@@ -5,7 +5,10 @@ import { es } from 'date-fns/locale'
 import { listTournaments } from '@/services/external-bracket-service'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { CuadrosIndexSkeleton } from './cuadros-skeleton'
+import { isSearchableQuery } from '@/lib/cuadros/player-search'
+import { PlayerSearch } from '@/components/cuadros/player-search'
+import { CuadrosIndexSkeleton, PlayerResultsSkeleton } from './cuadros-skeleton'
+import { PlayerResults } from './player-results'
 
 // Se sirve desde la DB y se refresca con cada sync → dinámica (sin prerender estático).
 export const dynamic = 'force-dynamic'
@@ -63,7 +66,16 @@ async function TournamentsList() {
   )
 }
 
-export default function CuadrosPage() {
+export default async function CuadrosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string | string[] }>
+}) {
+  const { q: rawQuery } = await searchParams
+  const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery)?.trim() ?? ''
+  // Con búsqueda, los resultados reemplazan a la lista de torneos.
+  const searching = isSearchableQuery(query)
+
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-10">
       <header className="mb-6">
@@ -72,9 +84,19 @@ export default function CuadrosPage() {
           Cuadros de torneos de tenis, en vivo y archivados.
         </p>
       </header>
-      <Suspense fallback={<CuadrosIndexSkeleton />}>
-        <TournamentsList />
-      </Suspense>
+      <div className="mb-4">
+        <PlayerSearch initialQuery={searching ? query : ''} />
+      </div>
+      {searching ? (
+        // key: cada búsqueda nueva vuelve a mostrar el skeleton mientras resuelve.
+        <Suspense key={query} fallback={<PlayerResultsSkeleton />}>
+          <PlayerResults query={query} />
+        </Suspense>
+      ) : (
+        <Suspense fallback={<CuadrosIndexSkeleton />}>
+          <TournamentsList />
+        </Suspense>
+      )}
     </main>
   )
 }

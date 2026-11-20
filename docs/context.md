@@ -159,6 +159,14 @@ Clave estable por torneo externo que computa cada **Adapter**: por **locator** e
 **live / archived**:
 Estado del torneo externo. `live` = se sigue sincronizando. `archived` = se **congela** en su último snapshot, se marca "finalizado" y queda visible para siempre (Tenis Tracker como archivo histórico). El **disparador de archivado depende de la fuente**: en **Academia** es el *flip* (la planilla pasa a otra etapa y la vieja desaparece de la fuente); en **MUR** las etapas no desaparecen (UUID estables, siempre listadas), así que se archiva cuando el **bracket está completo** (todas las finales de la etapa jugadas), con fallback por antigüedad (30 días desde el **fin** declarado del torneo; desde el inicio si la fuente no da fin) si la fuente nunca marca la final. No confundir `archived` con "desactualizado".
 
+**Buscador de jugador**:
+Búsqueda en `/cuadros` (`?q=`) por letras del nombre o apellido, sin distinguir tildes ni mayúsculas. Lista todos los partidos de cada jugador encontrado en los **Cuadros externos** (vivos y archivados). La identidad es el nombre normalizado, igual que **Favorito**: dos grafías distintas del mismo jugador son dos resultados, y una pareja de dobles es un solo nombre opaco.
+_Evitar_: confundirlo con el buscador de la timeline del **Perfil** (ese filtra las Participaciones propias).
+
+**Enfrentamientos** (en cuadros):
+Cruces entre dos jugadores en los **Cuadros externos**. Se muestran como "N enfrentamientos · G-P" cuando el par se cruzó 2+ veces. `N` cuenta todos los cruces (incluye W.O. y pendientes); el G-P sigue el criterio del **Récord W/L** (solo `normal` y `retiro`), visto desde el jugador buscado.
+_Evitar_: confundirlo con el **Head-to-Head (H2H)** del Perfil, que sale del log propio del usuario.
+
 ### WhatsApp y mensajería
 
 Términos de la feature **whatsapp-kapso** (integración vía Kapso, capa oficial sobre la Cloud API de Meta). Detalle de diseño en `docs/PRPs/whatsapp-kapso-{prp,roadmap}.md`.
