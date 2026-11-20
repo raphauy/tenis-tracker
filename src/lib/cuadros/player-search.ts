@@ -45,6 +45,12 @@ export type PlayerResult = {
   name: string
   wins: number
   losses: number
+  winPct: number | null // G / (G + P); null si no jugó ningún partido contado
+  tournaments: number // cuadros (torneo + categoría) en los que figura
+  // Logros acumulativos ("llegó a"): títulos ≤ finales ≤ semis. Ver tallyAchievements.
+  titles: number
+  finals: number
+  semis: number
   matches: PlayerMatch[] // más reciente primero
 }
 
@@ -95,6 +101,22 @@ function compareMatches(a: PlayerMatch, b: PlayerMatch): number {
   )
 }
 
+// Hasta dónde llegó un jugador en un cuadro.
+type Reached = { final: boolean; semi: boolean; title: boolean }
+
+// Logros acumulativos a partir de lo alcanzado en cada cuadro. Mismas métricas que las
+// Estadísticas del Perfil, con una diferencia: el Perfil solo cuenta resultados cerrados y
+// acá llegar a la ronda ya cuenta, aunque el partido esté pendiente o el rival sin definir
+// (es un hecho visible en el cuadro). El título sí exige haber ganado la final.
+function tallyAchievements(reached: Iterable<Reached>) {
+  const all = [...reached]
+  return {
+    titles: all.filter((r) => r.title).length,
+    finals: all.filter((r) => r.final).length,
+    semis: all.filter((r) => r.final || r.semi).length,
+  }
+}
+
 export function searchPlayers(
   sources: SearchSource[],
   query: string,
@@ -106,11 +128,35 @@ export function searchPlayers(
 
   type Acc = { name: string; nameDate: string | null; matches: PlayerMatch[] }
   const byPlayer = new Map<string, Acc>()
+  // Por jugador y por cuadro. Se llena con TODA aparición en el cuadro, también las que no
+  // son un partido listable (rival sin definir): quien ganó su semi ya es finalista aunque
+  // la otra semi no se haya jugado.
+  const reachedByPlayer = new Map<string, Map<string, Reached>>()
 
   for (const src of sources) {
     for (const round of src.bracket.rounds) {
       for (const m of round.matches) {
-        // Solo cruces reales: dos jugadores, ninguno BYE.
+        // La ronda se reconoce por su etiqueta, que los adapters ponen por geometría
+        // ("Final" = 1 partido, "Semifinal" = 2).
+        if (round.label === 'Final' || round.label === 'Semifinal') {
+          for (const [slot, pos] of [[m.p1, 1], [m.p2, 2]] as const) {
+            if (!slot || slot.bye) continue
+            const nameKey = normalizeName(slot.name)
+            if (!nameKey || !matchesQuery(nameKey)) continue
+            const brackets = reachedByPlayer.get(nameKey) ?? new Map<string, Reached>()
+            const bracketKey = `${src.tournamentSlug}/${src.categorySlug}`
+            const r = brackets.get(bracketKey) ?? { final: false, semi: false, title: false }
+            if (round.label === 'Final') {
+              r.final = true
+              if (m.status === 'played' && m.winner === pos) r.title = true
+            } else {
+              r.semi = true
+            }
+            brackets.set(bracketKey, r)
+            reachedByPlayer.set(nameKey, brackets)
+          }
+        }
+        // Partidos listables: solo cruces reales (dos jugadores, ninguno BYE).
         if (m.status === 'bye' || !m.p1 || !m.p2 || m.p1.bye || m.p2.bye) continue
         const sides = [
           { me: m.p1, opp: m.p2, pos: 1 as const },
@@ -175,7 +221,16 @@ export function searchPlayers(
       const rec = h2h.get(m.opponentKey)
       if (rec && rec.total >= 2) m.h2h = rec
     }
-    all.push({ nameKey, name: acc.name, wins, losses, matches })
+    all.push({
+      nameKey,
+      name: acc.name,
+      wins,
+      losses,
+      winPct: wins + losses === 0 ? null : wins / (wins + losses),
+      tournaments: new Set(matches.map((m) => `${m.tournamentSlug}/${m.categorySlug}`)).size,
+      ...tallyAchievements(reachedByPlayer.get(nameKey)?.values() ?? []),
+      matches,
+    })
   }
 
   all.sort((a, b) => a.name.localeCompare(b.name, 'es'))

@@ -18,6 +18,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { WinLoss } from '@/components/match/score-display'
+import { cn } from '@/lib/utils'
 import { ScoreSets } from './bracket-match'
 
 function formatMonthYear(iso: string | null): string {
@@ -29,6 +30,37 @@ function formatMonthYear(iso: string | null): string {
 
 function matchesLabel(n: number): string {
   return `${n} ${n === 1 ? 'partido' : 'partidos'}`
+}
+
+function tournamentsLabel(n: number): string {
+  return `${n} ${n === 1 ? 'torneo' : 'torneos'}`
+}
+
+function formatPct(pct: number | null): string {
+  return pct === null ? '—' : `${Math.round(pct * 100)}%`
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    // dt antes que dd (HTML válido); el valor se muestra arriba con flex-col-reverse.
+    <div className="flex flex-col-reverse items-center gap-0.5">
+      <dt className="text-[10px] font-normal text-muted-foreground">{label}</dt>
+      <dd className="font-heading text-sm font-semibold tabular-nums text-foreground">{value}</dd>
+    </div>
+  )
+}
+
+// Resumen del jugador en la fila colapsada: mismas métricas que las Estadísticas del Perfil.
+function PlayerStats({ player, className }: { player: PlayerResult; className?: string }) {
+  return (
+    <dl className={cn('grid grid-cols-5 gap-x-3', className)}>
+      <Stat value={`${player.wins}-${player.losses}`} label="G-P" />
+      <Stat value={formatPct(player.winPct)} label="Win rate" />
+      <Stat value={String(player.titles)} label="Títulos" />
+      <Stat value={String(player.finals)} label="Finales" />
+      <Stat value={String(player.semis)} label="Semis" />
+    </dl>
+  )
 }
 
 // Desenlace del partido desde el jugador buscado: marcador (sus games primero), W.O.,
@@ -169,16 +201,15 @@ export function PlayerResultsList({ players }: { players: PlayerResult[] }) {
           className="rounded-xl border bg-card px-4 shadow-sm"
         >
           <AccordionTrigger className="py-3.5 hover:no-underline">
-            <div className="flex flex-1 items-center justify-between gap-3 pr-3">
+            {/* Desktop: stats a la derecha del nombre. Mobile: debajo, a todo el ancho. */}
+            <div className="flex min-w-0 flex-1 flex-col gap-3 pr-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="truncate font-medium">{player.name}</span>
                 <span className="text-xs font-normal text-muted-foreground">
-                  {matchesLabel(player.matches.length)}
+                  {matchesLabel(player.matches.length)} · {tournamentsLabel(player.tournaments)}
                 </span>
               </div>
-              <span className="font-mono text-sm tabular-nums text-muted-foreground">
-                {player.wins}-{player.losses}
-              </span>
+              <PlayerStats player={player} className="sm:w-80 sm:shrink-0" />
             </div>
           </AccordionTrigger>
           <AccordionContent>

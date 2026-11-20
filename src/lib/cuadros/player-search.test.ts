@@ -158,6 +158,60 @@ describe('searchPlayers', () => {
     expect(searchPlayers(sources, 'camou')).toEqual({ players: [], total: 0 })
   })
 
+  it('calcula win%, torneos y logros acumulativos', () => {
+    const sources = [
+      // Campeón: ganó la final.
+      source('t1', '2026-01-01', [played(0, 'Juan Camou', 'Luis Díaz', 1)], 'Final'),
+      // Finalista: perdió la final.
+      source('t2', '2026-02-01', [played(0, 'Ana Ruiz', 'Juan Camou', 1)], 'Final'),
+      // Semifinalista.
+      source('t3', '2026-03-01', [played(0, 'Juan Camou', 'Ana Ruiz', 2)], 'Semifinal'),
+      // Eliminado antes.
+      source('t4', '2026-04-01', [played(0, 'Juan Camou', 'Pedro Sosa', 1)], 'Cuartos'),
+    ]
+    const [player] = searchPlayers(sources, 'camou').players
+    expect(player).toMatchObject({
+      wins: 2,
+      losses: 2,
+      winPct: 0.5,
+      tournaments: 4,
+      titles: 1,
+      finals: 2,
+      semis: 3,
+    })
+  })
+
+  it('quien ganó su semi ya cuenta como finalista aunque no se sepa el rival', () => {
+    const src: SearchSource = {
+      ...source('t1', '2026-01-01', []),
+      bracket: {
+        format: 'bracket',
+        drawSize: 4,
+        rounds: [
+          {
+            index: 0,
+            label: 'Semifinal',
+            matches: [
+              played(0, 'Juan Camou', 'Luis Díaz', 1),
+              match(1, { p1: { name: 'Ana Ruiz' }, p2: { name: 'Pedro Sosa' } }),
+            ],
+          },
+          { index: 1, label: 'Final', matches: [match(0, { p1: { name: 'Juan Camou' } })] },
+        ],
+      },
+    }
+    const [player] = searchPlayers([src], 'camou').players
+    expect(player.matches).toHaveLength(1) // la final sin rival no se lista
+    expect(player).toMatchObject({ tournaments: 1, titles: 0, finals: 1, semis: 1 })
+  })
+
+  it('sin partidos contados el win% es null', () => {
+    const sources = [
+      source('t1', '2026-01-01', [match(0, { p1: { name: 'Juan Camou' }, p2: { name: 'Luis Díaz' } })]),
+    ]
+    expect(searchPlayers(sources, 'camou').players[0].winPct).toBeNull()
+  })
+
   it('junta grafías que normalizan igual y respeta el tope', () => {
     const sources = [
       source('t1', '2026-01-01', [played(0, 'juan camou', 'Luis Díaz', 1)]),
